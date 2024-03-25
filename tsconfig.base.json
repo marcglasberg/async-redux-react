@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "checkJs": true,
+    "allowJs": true,
+    "declaration": true,
+    "declarationMap": true,
+    "allowSyntheticDefaultImports": true,
+    "jsx": "react",
+  },
+  "files": [
+    "./src/index.ts",
+    "./src/ClassPersistor.tsx",
+    "./src/Persistor.tsx",
+    "./src/ProcessPersistence.ts",
+    "./src/ReduxAction.ts",
+    "./src/Store.tsx",
+    "./src/StoreException.ts",
+    "./src/UserException.ts",
+    "./src/Wait.ts",
+    "./src/utils.ts",
+    "./src/Esserializer/constant.ts",
+    "./src/Esserializer/DeserializationOptions.ts",
+    "./src/Esserializer/deserializer.ts",
+    "./src/Esserializer/general.ts",
+    "./src/Esserializer/index.ts",
+    "./src/Esserializer/SerializeOptions.ts",
+    "./src/Esserializer/serializer.ts"
+  ]
+}

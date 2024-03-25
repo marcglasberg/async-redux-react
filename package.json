@@ -1,0 +1,85 @@
+{
+  "name": "async-redux-react",
+  "version": "1.0.0",
+  "description": "The easy version of Redux for 2024: power-packed, and equipped with all you need for state management.",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./lib/esm/types/index.d.ts",
+        "default": "./lib/esm/index.mjs"
+      },
+      "require": {
+        "types": "./lib/cjs/types/index.d.ts",
+        "default": "./lib/cjs/index.js"
+      }
+    }
+  },
+  "types": "./lib/cjs/types/index.d.ts",
+  "main": "./lib/cjs/index.js",
+  "files": [
+    "lib/**/*"
+  ],
+  "scripts": {
+    "clean": "del-cli ./lib",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "build:esm": "tsc -p ./tsconfig.esm.json && node -e \"require('fs').rename('lib/esm/index.js', 'lib/esm/index.mjs', (err) => { if (err) throw err; })\"",
+    "build:cjs": "tsc -p ./tsconfig.cjs.json",
+    "test": "jest",
+    "semantic-release": "semantic-release",
+    "prepack": "npm run build"
+  },
+  "release": {
+    "branches": [
+      "main"
+    ]
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marcglasberg/async-redux-react.git"
+  },
+  "keywords": [
+    "redux",
+    "react",
+    "reactjs",
+    "reactive",
+    "state management",
+    "state",
+    "management",
+    "manager",
+    "hooks",
+    "mobx",
+    "zustand"
+  ],
+  "author": "Marcelo Glasberg",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/marcglasberg/async-redux-react/issues"
+  },
+  "homepage": "https://github.com/marcglasberg/async-redux-react#readme",
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "@babel/preset-env": "^7.20.0",
+    "@babel/preset-typescript": "^7.23.2",
+    "@babel/runtime": "^7.20.0",
+    "@types/jest": "^29.5.12",
+    "@types/react-test-renderer": "^18.0.0",
+    "babel-jest": "^29.2.1",
+    "del-cli": "^5.1.0",
+    "easy-bdd-tool-jest": "^1.0.4",
+    "eslint": "^8.54.0",
+    "jest": "^29.6.3",
+    "move-file": "^3.1.0",
+    "prettier": "^2.4.1",
+    "react": "^18.2.0",
+    "react-test-renderer": "18.2.0",
+    "semantic-release": "^19.0.3",
+    "ts-jest": "^29.1.2",
+    "typescript": "4.8.4"
+  },
+  "peerDependencies": {
+    "react": "^18.2.0"
+  }
+}
