@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { ClassPersistor, ShowUserException, Store, StoreProvider, useStore } from 'async-redux-react';
+import {
+  ClassPersistor,
+  ShowUserException,
+  Store,
+  StoreProvider,
+  useStore
+} from 'async-redux-react';
 import {
   ActivityIndicator,
   Alert,
@@ -55,7 +61,7 @@ const userExceptionDialog: ShowUserException =
     Alert.alert(
       exception.title || exception.message,
       exception.title ? exception.message : '',
-      [{ text: 'OK', onPress: (_value?: string) => next }]
+      [{ text: 'OK', onPress: (_value?: string) => next() }]
     );
   };
 
@@ -74,36 +80,40 @@ const AppContent: React.FC = () => {
 
 const TodoInput: React.FC = () => {
 
-  const store = useStore<State>();
   const [inputText, setInputText] = useState<string>('');
+  const store = useStore<State>();
+
+  let isFailed = store.isFailed(AddTodoAction);
+  let errorText = store.exceptionFor(AddTodoAction)?.errorText ?? '';
+
+  async function sendInputToStore(inputText: string) {
+    let status = await store.dispatchAndWait(new AddTodoAction(inputText));
+    if (status.isCompletedOk) setInputText(''); // If added, clean the text from the input.
+  }
 
   return (
     <View style={styles.inputRow}>
 
       <TextInput
-        placeholder="Type here..."
+        placeholder={isFailed ? errorText : 'Type here...'}
         value={inputText}
-        style={styles.input}
+        style={[styles.input, isFailed ? styles.inputError : null]}
         onChangeText={(text) => {
           const capitalizedText = text.charAt(0).toUpperCase() + text.slice(1);
           setInputText(capitalizedText);
+          store.clearExceptionFor(AddTodoAction);
         }}
-        onSubmitEditing={() => {
-          store.dispatch(new AddTodoAction(inputText));
-          setInputText(''); // Clear the input after adding the todo
-        }}
+        onSubmitEditing={() => sendInputToStore(inputText)}
       />
 
-      <TouchableOpacity onPress={() => {
-        store.dispatch(new AddTodoAction(inputText));
-        setInputText('');
-      }} style={styles.button}>
+      <TouchableOpacity onPress={() => sendInputToStore(inputText)} style={styles.button}>
         <Text style={styles.footerButtonText}>Add</Text>
       </TouchableOpacity>
 
     </View>
   );
 };
+
 
 const NoTodosWarning: React.FC = () => {
 
@@ -325,6 +335,9 @@ const styles = StyleSheet.create({
     borderColor: '#999',
     padding: 10,
     margin: 10
+  },
+  inputError: {
+    borderColor: 'red'
   },
   checkbox: {
     paddingHorizontal: 10,

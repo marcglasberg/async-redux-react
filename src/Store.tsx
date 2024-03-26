@@ -1,6 +1,6 @@
 import React, { createContext, Dispatch, SetStateAction, useContext, useState } from 'react';
 import { UserException } from './UserException';
-import { Persistor } from './Persistor';
+import { Persistor, SetStateDontPersistAction } from './Persistor';
 import { ActionStatus, AsyncReducer, AsyncReducerResult, ReduxAction, ReduxReducer, RetryOptions } from './ReduxAction';
 import { ProcessPersistence } from './ProcessPersistence';
 import { StoreException, TimeoutException } from './StoreException';
@@ -32,7 +32,7 @@ interface ConstructorParams<St> {
    *     Alert.alert(
    *       exception.title || exception.message,
    *       exception.title ? exception.message : '',
-   *       [{ text: 'OK', onPress: (value?: string) => next }]
+   *       [{ text: 'OK', onPress: (_value?: string) => next() }]
    *     );
    *   };
    * ```
@@ -224,37 +224,49 @@ export class Store<St> {
    */
   public readonly userExceptionsQueue: UserException[];
 
-  /// The async actions that are currently being processed.
-  /// Use `isWaiting` to know if an action is currently being processed.
+  /**
+   * The async actions that are currently being processed.
+   * Use `isWaiting` to know if an action is currently being processed.
+   */
   private readonly _actionsInProgress: Set<ReduxAction<St>>;
 
-  /// Async actions that we may put into `_asyncActionsInProgress`.
-  /// This helps to know when to rebuild to make `isWaiting` work.
+  /**
+   * Async actions that we may put into `_asyncActionsInProgress`.
+   * This helps to know when to rebuild to make `isWaiting` work.
+   */
   private readonly _awaitableActions: Set<new (...args: any[]) => ReduxAction<St>>;
 
-  /// The async actions that have failed recently.
-  /// When an action fails by throwing an UserException, it's added to this map (indexed by its
-  /// action type), and removed when it's dispatched.
-  /// Use `isFailed`, `exceptionFor` and `clearExceptionFor` to know if you should display
-  /// some error message due to an action failure.
-  ///
-  /// Note: Throwing an UserException can show a modal dialog to the user, and also show the error
-  /// as a message in the UI. If you don't want to show the dialog you can use the `noDialog`
-  /// getter in the error message: `throw UserException('Invalid input').noDialog`.
-  ///
+  /**
+   * The actions that have failed recently.
+   * When an action fails by throwing an `UserException`, it's added to this map
+   * (indexed by its action type), and then removed when it's dispatched.
+   *
+   * Use `isFailed`, `exceptionFor` and `clearExceptionFor` to know if you should display
+   * some error message due to an action failure.
+   *
+   * Note: Throwing an `UserException` can show a modal dialog to the user, and also show the error
+   * as a message in the UI. If you don't want to show the dialog you can use the `noDialog`
+   * getter in the error message: `throw UserException('Invalid input').noDialog`.
+   */
   private readonly _failedActions: Map<new (...args: any[]) => ReduxAction<St>, ReduxAction<St>>;
 
-  /// Async actions that we may put into `_failedActions`.
-  /// This helps to know when to rebuild to make `isWaiting` work.
+  /**
+   * Async actions that we may put into `_failedActions`.
+   * This helps to know when to rebuild to make `isWaiting` work.
+   */
   private readonly _actionsWeCanCheckFailed: Set<new (...args: any[]) => ReduxAction<St>>;
 
-  // Helps implement the waitCondition method.
+  /**
+   * Helps implement the waitCondition method.
+   */
   private _waitConditions: Array<{
     check: (state: St) => boolean,
     resolve: (state: St) => void
   }> = [];
 
-  // Helps implement the `waitActionCondition` method.
+  /**
+   * Helps implement the `waitActionCondition` method.
+   */
   private _waitActionConditions: Array<{
     check: (actions: Set<ReduxAction<St>>, triggerAction: ReduxAction<St> | null) => boolean,
     resolve: (actions: Set<ReduxAction<St>>, triggerAction: ReduxAction<St> | null) => void
@@ -520,9 +532,10 @@ export class Store<St> {
   private _processDispatch(action: ReduxAction<St>, mustBeSync: boolean) {
 
     this._dispatchCount++;
-    Store.log(`${this._dispatchCount})${action}`);
+    Store.log(`${this._dispatchCount}) ${action}`);
 
-    if (this._forceUiUpdateFunction === null) Store.log('Component tree not wrapped with <StoreProvider store={store}>');
+    if (this._forceUiUpdateFunction === null && !(action instanceof SetStateDontPersistAction))
+      Store.log('Make sure you wrapped the component tree with <StoreProvider store={store}>');
 
     if (action.status.isDispatched)
       throw new StoreException('The action was already dispatched. Please, create a new action each time.');
@@ -532,8 +545,6 @@ export class Store<St> {
     // We inject the store so that the action can access it (and state, dispatch etc)
     // as an object property.
     action._injectStore(this);
-
-    Store.log('Dispatched: ' + action);
 
     // The action is dispatched twice. This is the 1st: when the action starts (ini true).
     this._actionObserver?.(action, this._dispatchCount, true);
@@ -577,7 +588,6 @@ export class Store<St> {
       this._forceUiUpdate();
     }
   }
-
 
   // Wraps SYNC actions.
   // - Runs the before are reduce methods.
@@ -705,9 +715,8 @@ export class Store<St> {
     try {
       action.after();
     } catch (error) {
-      Store.log('The `after()` method of the action ' + action + ' threw an error: ' + error
-        + '. This error will be ignored, but you should fix this, as `after()` methods should ' +
-        'not throw errors.');
+      Store.log(`The after() method of the action ${action} threw an error: ${error}. 
+      This error will be ignored, but you should fix this, as after() methods should not throw errors.`);
     } finally {
       action._changeStatus({hasFinishedMethodAfter: true});
     }
@@ -814,11 +823,11 @@ export class Store<St> {
     let retry = (action.retry as RetryOptions);
 
     if (!retry.on) {
-      function _wrapReduce1(reduce: () => ReduxReducer<St>): () => ReduxReducer<St> {
+      function _wrapReduceOff(reduce: () => ReduxReducer<St>): () => ReduxReducer<St> {
         return reduce;
       }
 
-      return _wrapReduce1;
+      return _wrapReduceOff;
     }
     //
     else {
@@ -837,9 +846,9 @@ export class Store<St> {
         return retry.currentDelay!;
       }
 
-      function _wrapReduce2(reduce: () => ReduxReducer<St>): () => ReduxReducer<St> {
+      function _wrapReduceRetry(reduce: () => ReduxReducer<St>): () => ReduxReducer<St> {
 
-        async function _wrapReduce3(): AsyncReducer<St> {
+        async function _wrapReduceRetryAsync(): AsyncReducer<St> {
 
           let newState: any;
           try {
@@ -861,12 +870,10 @@ export class Store<St> {
           return newState;
         }
 
-        // Store.log(' ======= RETURNED _wrapReduce3 = () => ' + _wrapReduce3);
-        return () => _wrapReduce3();
+        return () => _wrapReduceRetryAsync();
       }
 
-      // Store.log(' ======= RETURNED _wrapReduce2 = () => ' + _wrapReduce2);
-      return _wrapReduce2;
+      return _wrapReduceRetry;
     }
   }
 
@@ -1063,7 +1070,7 @@ export class Store<St> {
    *     Alert.alert(
    *       exception.title || exception.message,
    *       exception.title ? exception.message : '',
-   *       [{ text: 'OK', onPress: (value?: string) => { next(); }]
+   *       [{ text: 'OK', onPress: (_value?: string) => next() }]
    *     );
    *   };
    * ```

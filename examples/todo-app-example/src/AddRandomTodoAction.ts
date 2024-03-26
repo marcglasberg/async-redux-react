@@ -2,6 +2,7 @@ import { Action } from './Action';
 import { Filter } from './Filter';
 import { State } from './State';
 import { UserException } from 'async-redux-react';
+import { delayMillis } from "./utils/utils";
 
 /**
  * Add a random item to the list. The item is a random fact from the NumbersAPI.
@@ -11,6 +12,10 @@ import { UserException } from 'async-redux-react';
 export class AddRandomTodoAction extends Action {
 
   async reduce() {
+
+    // For demonstration purposes only. Just to give us some
+    // time to see the spinner while the information loads.
+    await delayMillis(250);
 
     let text = await this.getTextFromTheNumbersAPI();
 

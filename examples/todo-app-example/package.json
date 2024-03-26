@@ -10,9 +10,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "async-redux-react": "file:/../../",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "async-redux-react": "file:/../../",
     "@emotion/react": "^11.11.4",
     "@emotion/styled": "^11.11.0",
     "@mui/material": "^5.15.11"

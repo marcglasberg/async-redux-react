@@ -67,7 +67,7 @@ export function App() {
  *     Alert.alert(
  *       exception.title || exception.message,
  *       exception.title ? exception.message : '',
- *       [{ text: 'OK', onPress: (value?: string) => next }]
+ *       [{ text: 'OK', onPress: (_value?: string) => next() }]
  *     );
  *   };
  * ```
@@ -114,29 +114,33 @@ const AppContent: React.FC = () => {
 
 const TodoInput: React.FC = () => {
 
-  const store = useStore<State>();
   const [inputText, setInputText] = useState<string>('');
+  const store = useStore<State>();
+
+  let isFailed = store.isFailed(AddTodoAction);
+  let errorText = store.exceptionFor(AddTodoAction)?.errorText ?? '';
+
+  async function sendInputToStore(inputText: string) {
+    let status = await store.dispatchAndWait(new AddTodoAction(inputText));
+    if (status.isCompletedOk) setInputText(''); // If added, clean the text from the TextField.
+  }
 
   return (
     <div className='inputWrapper'>
       <TextField className='inputField'
-                 placeholder="Type here..."
+                 placeholder={isFailed ? errorText : "Type here..."}
+                 error={isFailed}
                  value={inputText}
                  onChange={(e) => {
                    const capitalizedText = e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1);
                    setInputText(capitalizedText);
+                   store.clearExceptionFor(AddTodoAction);
                  }}
                  onKeyDown={(e) => {
-                   if (e.key === 'Enter') {
-                     store.dispatch(new AddTodoAction(inputText));
-                     setInputText(''); // Clear the input after adding the todo
-                   }
+                   if (e.key === 'Enter') sendInputToStore(inputText);
                  }}
       />
-      <Button variant="contained" color="primary" onClick={() => {
-        store.dispatch(new AddTodoAction(inputText));
-        setInputText('');
-      }}>
+      <Button variant="contained" color="primary" onClick={() => sendInputToStore(inputText)}>
         Add
       </Button>
     </div>
@@ -253,7 +257,7 @@ const RemoveAllButton: React.FC = () => {
 const AddRandomTodoButton: React.FC = () => {
   const store = useStore<State>();
   let loading = store.isWaiting(AddRandomTodoAction);
-  let failed = store.isFailed(RemoveCompletedTodosAction);
+  let failed = store.isFailed(AddRandomTodoAction);
 
   return (
     <Button style={{display: "block", width: '100%', height: '60px', marginBottom: "10px", color: 'white'}}

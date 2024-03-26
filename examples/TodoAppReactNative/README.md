@@ -20,7 +20,7 @@ In it's `package.json` file it adds Async Redux as a dependency like this:
 ```json
 {
   "dependencies": {
-    "async-redux-react": "^1.0.0"
+    "async-redux-react": "^1.1.0"
   }
 }
 ```

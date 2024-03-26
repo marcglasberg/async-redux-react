@@ -175,5 +175,9 @@ export class SetStateDontPersistAction<St> extends ReduxAction<St> {
   reduce(): St {
     return this.newState;
   }
+
+  toString(): string {
+    return `${this.constructor.name}(state)`;
+  }
 }
 

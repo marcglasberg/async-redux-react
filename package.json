@@ -1,6 +1,6 @@
 {
   "name": "async-redux-react",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "The easy version of Redux for 2024: power-packed, and equipped with all you need for state management.",
   "exports": {
     ".": {

@@ -4,8 +4,7 @@ In the terminal:
 
 ```
 npm run build
-npm login
-npm publish --access=public
+npm publish
 ```
 
 Note:

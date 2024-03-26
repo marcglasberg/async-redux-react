@@ -11,7 +11,10 @@ export class AddTodoAction extends Action {
   reduce() {
 
     if (this.state.todos.ifExists(this.text)) {
-      throw new UserException('The item "' + this.text + '" already exists.');
+      throw new UserException(
+        `The item "${this.text}" already exists.`, {
+          errorText: 'Type something else...'
+        }).withDialog(true);
     }
 
     let newTodos = this.state.todos.addTodoFromText(this.text);
