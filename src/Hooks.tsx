@@ -55,7 +55,17 @@ export function useSelect<St, T>(selector: (state: St) => T): T {
 }
 
 /**
- * @deprecated Use `useSelect` (because it's shorter).
+ * Returns a part of the store state:
+ *
+ * ```ts
+ * const name = useSelector((state: State) => state.user.name);
+ * ```
+ *
+ * The component will rebuild only when the `name` changes, ignoring the
+ * change in other parts of the state.
+ *
+ * Note: You can use `useSelect` and `useSelector` interchangeably.
+ * Prefer `useSelect` because it's shorter.
  */
 export function useSelector<St, T>(selector: (state: St) => T): T {
   return useSelect(selector);

@@ -1,5 +1,5 @@
-import { PersistAction, Persistor, SetStateDontPersistAction } from "./Persistor";
-import { ReduxAction } from "./ReduxAction";
+import { PersistAction, Persistor } from "./Persistor";
+import { ReduxAction, UpdateStateAction } from "./ReduxAction";
 import { Store } from "./Store";
 
 export class ProcessPersistence<St> {
@@ -40,7 +40,12 @@ export class ProcessPersistence<St> {
       // If the saved state was read successfully, we replace the store state with it.
       // In this case, the initial-state passed in the Store constructor was used
       // only while the persisted state is loading.
-      store.dispatch(new SetStateDontPersistAction<St>(stateReadFromPersistor));
+      await store.dispatchAndWait(
+        new UpdateStateAction<St>(
+          (_) => stateReadFromPersistor,
+          false, // Do not persist the state we just read from the persistence.
+        )
+      );
     }
   }
 
@@ -81,7 +86,7 @@ export class ProcessPersistence<St> {
 
     if (this.isPaused || this.lastPersistedState === newState) return false;
 
-    if (action instanceof SetStateDontPersistAction) {
+    if ((action instanceof UpdateStateAction) && (!action.ifPersists)) {
       this.lastPersistedState = this.newestState;
       return false;
     }

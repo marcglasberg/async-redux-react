@@ -1,5 +1,5 @@
 import { TodoItem } from './Todos';
-import { Action } from './Action';
+import { Action } from '../infra/Action';
 
 export class RemoveTodoAction extends Action {
 

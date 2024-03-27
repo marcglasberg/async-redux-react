@@ -160,24 +160,3 @@ export class PersistAction<St> extends ReduxAction<St> {
   }
 }
 
-/**
- * This replaces all the store state with the given state.
- * However, the persistor will ignore it, and won't persist the state change.
- * Use this ONLY when you just read the whole state from the persistence, and
- * you don't want to persist it again.
- */
-export class SetStateDontPersistAction<St> extends ReduxAction<St> {
-
-  constructor(readonly newState: St) {
-    super();
-  }
-
-  reduce(): St {
-    return this.newState;
-  }
-
-  toString(): string {
-    return `${this.constructor.name}(state)`;
-  }
-}
-

@@ -1,8 +1,8 @@
-import { Action } from './Action';
+import { Action } from '../infra/Action';
 import { Filter } from './Filter';
 import { State } from './State';
 import { UserException } from 'async-redux-react';
-import { delayMillis } from "./utils/utils";
+import { delayMillis } from "../utils/utils";
 
 /**
  * Add a random item to the list. The item is a random fact from the NumbersAPI.

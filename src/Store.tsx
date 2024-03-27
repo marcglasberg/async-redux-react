@@ -238,7 +238,7 @@ export class Store<St> {
   // 2. Apply each selector to the current state to calculate the selected value.
   // 3. And compare the selected value with the last selected value.
   // 4. If it changed, it calls setValue.
-  private _processStateHooks() {
+  private _rebuildFromStateHooks() {
     this._refStateHooks.forEach((hookRef) => {
       if (hookRef.current) {
         const [selector, currentValue, setValue] = hookRef.current.selectorAndValueAndSetValue;
@@ -263,7 +263,7 @@ export class Store<St> {
   // 2. Apply each selector to the current store to calculate the selected value.
   // 3. And compare the selected value with the last selected value.
   // 4. If it changed, it calls setValue.
-  private _processStoreHooks() {
+  private _rebuildFromStoreHooks() {
     this._refStoreHooks.forEach((hookRef) => {
       if (hookRef.current) {
         const [selector, currentValue, setValue] = hookRef.current.selectorAndValueAndSetValue;
@@ -626,7 +626,7 @@ export class Store<St> {
       // Then we notify the UI. Note we don't notify if the action was never checked.
       if (wasInTheList) {
         theUIHasAlreadyUpdated = true;
-        this._processStoreHooks();
+        this._rebuildFromStoreHooks();
       }
     }
 
@@ -637,7 +637,7 @@ export class Store<St> {
     // the action is awaitable (that is to say, we have already called `isWaiting` for this action),
     if (!theUIHasAlreadyUpdated && this._awaitableActions.has(action.constructor as new (...args: any[]) => ReduxAction<St>)) {
       // Then we notify the UI. Note we don't notify if the action was never checked.
-      this._processStoreHooks();
+      this._rebuildFromStoreHooks();
     }
   }
 
@@ -777,7 +777,7 @@ export class Store<St> {
     // Note: If the state was applied, this was already removed and the UI updated.
     const removed = this._actionsInProgress.delete(action);
     if (removed) {
-      this._processStoreHooks();
+      this._rebuildFromStoreHooks();
 
       // Check the wait-conditions after state change. We pass it the trigger-action.
       this._checkAllActionConditions(action);
@@ -1067,7 +1067,7 @@ export class Store<St> {
 
     if (newState !== null && newState !== this._state) {
       this._state = newState;
-      this._processStateHooks();
+      this._rebuildFromStateHooks();
 
       // Observe the state with null error, because the reducer completed normally.
       this._stateObserver?.(action, prevState, newState, null, this._dispatchCount);
@@ -1082,7 +1082,7 @@ export class Store<St> {
 
       // Check the wait-conditions after state change. We pass it the trigger-action.
       if (removed) {
-        this._processStoreHooks();
+        this._rebuildFromStoreHooks();
         this._checkAllActionConditions(action);
       }
 
@@ -1230,7 +1230,7 @@ export class Store<St> {
    */
   clearExceptionFor<T extends ReduxAction<St>>(type: { new(...args: any[]): T }): void {
     let result = this._failedActions.delete(type);
-    if (result) this._processStoreHooks();
+    if (result) this._rebuildFromStoreHooks();
   }
 
   static describeStateChange(obj1: any, obj2: any, path: string = ''): String {

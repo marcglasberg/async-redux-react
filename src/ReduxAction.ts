@@ -1446,16 +1446,32 @@ export abstract class OptimisticUpdate<St> extends ReduxAction<St> {
   }
 }
 
-class UpdateStateAction<St> extends ReduxAction<St> {
-  updateFunction: (state: St) => St;
+/**
+ * The `UpdateStateAction` replaces all the store state, synchronously,
+ * using the given `stateUpdateFunction`.
+ *
+ * By default, `ifPersists` is true, which means the persistor may persist
+ * the state change.
+ *
+ * However, if `ifPersists` is false, the persistor will ignore this state change,
+ * and won't persist the state change. This is useful when you read some state from
+ * the local persistence (the device disk) and you don't want to persist it again.
+ */
+export class UpdateStateAction<St> extends ReduxAction<St> {
 
-  constructor(updateFunction: (state: St) => St) {
+  constructor(
+    readonly updateFunction: (state: St) => (St | null),
+    readonly ifPersists: boolean = true,
+  ) {
     super();
-    this.updateFunction = updateFunction;
   }
 
-  reduce(): St {
+  reduce(): St | null {
     return this.updateFunction(this.state);
+  }
+
+  toString(): string {
+    return `${this.constructor.name}(state)`;
   }
 }
 

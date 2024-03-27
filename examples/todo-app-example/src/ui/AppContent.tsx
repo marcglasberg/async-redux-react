@@ -1,117 +1,26 @@
 import React, { useState } from 'react';
 import {
-  ClassPersistor,
-  ShowUserException,
-  Store,
-  StoreProvider,
   useAllState,
   useClearExceptionFor,
   useDispatch,
   useExceptionFor,
   useIsFailed,
   useIsWaiting,
-  UserException,
   useSelect,
   useStore,
 } from 'async-redux-react';
-import {
-  Button,
-  Checkbox,
-  CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  FormControlLabel,
-  TextField
-} from '@mui/material';
-import { State } from './State';
-import { AddTodoAction } from './AddTodoAction';
-import { ToggleTodoAction } from './ToggleTodoAction';
-import { RemoveCompletedTodosAction } from './RemoveCompletedTodosAction';
-import { TodoItem, Todos } from './Todos';
-import { NextFilterAction } from './NextFilterAction';
-import { Filter } from './Filter';
-import { AddRandomTodoAction } from './AddRandomTodoAction';
-import { createRoot } from "react-dom/client";
+import { Button, Checkbox, CircularProgress, FormControlLabel, TextField } from '@mui/material';
+import { State } from '../business/State';
+import { AddTodoAction } from '../business/AddTodoAction';
+import { ToggleTodoAction } from '../business/ToggleTodoAction';
+import { RemoveCompletedTodosAction } from '../business/RemoveCompletedTodosAction';
+import { TodoItem } from '../business/Todos';
+import { NextFilterAction } from '../business/NextFilterAction';
+import { Filter } from '../business/Filter';
+import { AddRandomTodoAction } from '../business/AddRandomTodoAction';
 import './AppStyles.css';
 
-export function App() {
-
-  const store = new Store<State>({
-    initialState: State.initialState,
-    showUserException: userExceptionDialog,
-    persistor: getPersistor(),
-  });
-
-  return (
-    <StoreProvider store={store}>
-      <AppContent/>
-    </StoreProvider>
-  );
-
-  // Uses AsyncStorage, since this is a React Native app. If it was a React web app,
-  // we would use localStorage or IndexedDB.
-  function getPersistor() {
-    return new ClassPersistor<State>(
-      async () => window.localStorage.getItem('state'),
-      async (serialized: string) => window.localStorage.setItem('state', serialized),
-      async () => window.localStorage.clear(),
-      [State, Todos, TodoItem, Filter]
-    );
-  }
-}
-
-/**
- * It could also open a browser dialog:
- *
- * ```ts
- * const userExceptionDialog: ShowUserException =
- *   (exception, count, next) => {
- *     let message = exception.title ? `${exception.title} - ${exception.message}` : exception.message;
- *     window.alert(message);
- *     next();
- *   };
- * ```
- *
- * In React Native it could be:
- *
- * ```ts
- * const userExceptionDialog: ShowUserException =
- *   (exception, count, next) => {
- *     Alert.alert(
- *       exception.title || exception.message,
- *       exception.title ? exception.message : '',
- *       [{ text: 'OK', onPress: (_value?: string) => next() }]
- *     );
- *   };
- * ```
- */
-const userExceptionDialog: ShowUserException = (exception: UserException, _count: number, next: () => void) => {
-
-  const container = document.getElementById('dialog-root');
-  if (!container) return;
-
-  const root = createRoot(container!);
-
-  const closeDialog = () => {
-    root.unmount();
-    next();
-  };
-
-  root.render(
-    <Dialog open={true} onClose={closeDialog}>
-      <DialogContent>
-        <p>{exception.title || 'Error'}</p>
-        <p>{exception.message}</p>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={closeDialog}>OK</Button>
-      </DialogActions>
-    </Dialog>
-  );
-};
-
-const AppContent: React.FC = () => {
+export const AppContent: React.FC = () => {
   return (
     <div className='appContentStyle'>
       <h1 className='h1Style'>Todos</h1>
@@ -136,7 +45,7 @@ const TodoInput: React.FC = () => {
   let clearExceptionFor = useClearExceptionFor();
 
   async function sendInputToStore(inputText: string) {
-    let status = await store.dispatchAndWait(new AddTodoAction(inputText));
+    const status = await store.dispatchAndWait(new AddTodoAction(inputText))
     if (status.isCompletedOk) setInputText(''); // If added, clean the text from the TextField.
   }
 
@@ -166,11 +75,17 @@ const TodoInput: React.FC = () => {
 };
 
 const NoTodosWarning: React.FC = () => {
-  const storeState = useAllState<State>();
-  let filter = storeState.filter;
-  let count = storeState.todos.count(filter);
-  let countCompleted = storeState.todos.count(Filter.showCompleted);
-  let countActive = storeState.todos.count(Filter.showActive);
+
+  // Getting the whole store state with `useAllState()` works,
+  // but the component will rebuild whenever the state changes.
+  const filter = useAllState<State>().filter;
+
+  // Using `useSelect()` is better, because the component will
+  // only rebuild when the selected part of the state changes.
+  const todos = useSelect((state: State) => state.todos);
+  let count = todos.count(filter);
+  let countCompleted = todos.count(Filter.showCompleted);
+  let countActive = todos.count(Filter.showActive);
 
   if (count === 0) {
     let warningText = '';
@@ -202,6 +117,7 @@ const NoTodosWarning: React.FC = () => {
 
   return <div></div>;
 };
+
 const TodoList: React.FC = () => {
   const store = useStore();
   const storeState = useAllState<State>();
@@ -279,8 +195,6 @@ const RemoveAllButton: React.FC = () => {
 const AddRandomTodoButton: React.FC = () => {
   let isLoading = useIsWaiting(AddRandomTodoAction);
   const store = useStore();
-
-  console.log('isLoading = ' + isLoading);
 
   return (
     <Button style={{display: "block", width: '100%', height: '60px', marginBottom: "10px", color: 'white'}}

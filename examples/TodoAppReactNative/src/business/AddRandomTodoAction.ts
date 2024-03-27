@@ -1,6 +1,6 @@
-import { Action } from './Action';
-import { Filter } from './Filter';
-import { State } from './State';
+import { Action } from '../infra/Action.ts';
+import { Filter } from './Filter.ts';
+import { State } from './State.ts';
 import { UserException } from 'async-redux-react';
 
 /**

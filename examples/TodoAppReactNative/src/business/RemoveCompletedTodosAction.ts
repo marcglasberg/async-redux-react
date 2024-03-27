@@ -1,8 +1,8 @@
-import { Action } from './Action';
-import { RemoveTodoAction } from './RemoveTodoAction';
-import { SetFilterAction } from './NextFilterAction';
-import { Filter } from './Filter';
-import { delayMillis } from './utils/utils';
+import { Action } from '../infra/Action.ts';
+import { RemoveTodoAction } from './RemoveTodoAction.ts';
+import { SetFilterAction } from './NextFilterAction.ts';
+import { Filter } from './Filter.ts';
+import { delayMillis } from '../utils/utils.ts';
 
 /**
  * Remove all completed items. Waits 300 milliseconds for each item removed,
@@ -28,14 +28,14 @@ export class RemoveCompletedTodosAction extends Action {
         await delayMillis(500);
       }
 
-      // For each completed item, wait for 250 milliseconds and remove it, one by one.
+      // For each completed item, wait for 100 milliseconds and remove it, one by one.
       for (let todo of this.state.todos) {
         if (todo.completed) {
           this.dispatch(new RemoveTodoAction(todo));
 
           // If there are still completed items to delete, wait for 250 milliseconds.
           if (!(this.state.todos.isEmpty(Filter.showCompleted)))
-            await delayMillis(250);
+            await delayMillis(100);
         }
       }
 

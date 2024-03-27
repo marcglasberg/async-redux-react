@@ -1,65 +1,16 @@
 import React, { useState } from 'react';
-import { ClassPersistor, ShowUserException, Store, StoreProvider, useStore } from 'async-redux-react';
-import {
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
-} from 'react-native';
-import { State } from './State';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useStore } from 'async-redux-react';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AddTodoAction } from './AddTodoAction';
-import { ToggleTodoAction } from './ToggleTodoAction';
-import { RemoveCompletedTodosAction } from './RemoveCompletedTodosAction';
-import { TodoItem, Todos } from './Todos';
-import { NextFilterAction } from './NextFilterAction';
-import { Filter } from './Filter';
-import { AddRandomTodoAction } from './AddRandomTodoAction';
+import { AddTodoAction } from '../business/AddTodoAction.ts';
+import { ToggleTodoAction } from '../business/ToggleTodoAction.ts';
+import { RemoveCompletedTodosAction } from '../business/RemoveCompletedTodosAction.ts';
+import { TodoItem } from '../business/Todos.ts';
+import { NextFilterAction } from '../business/NextFilterAction.ts';
+import { Filter } from '../business/Filter.ts';
+import { AddRandomTodoAction } from '../business/AddRandomTodoAction.ts';
 
-export function App() {
-
-  const store = new Store<State>({
-    initialState: State.initialState,
-    showUserException: userExceptionDialog,
-    persistor: getPersistor()
-  });
-
-  return (
-    <StoreProvider store={store}>
-      <SafeAreaProvider>
-        <AppContent/>
-      </SafeAreaProvider>
-    </StoreProvider>
-  );
-
-  // Uses AsyncStorage, since this is a React Native app. If it was a React web app,
-  // we would use localStorage or IndexedDB.
-  function getPersistor() {
-    return new ClassPersistor<State>(
-      async () => await AsyncStorage.getItem('state'),
-      async (serialized) => await AsyncStorage.setItem('state', serialized),
-      async () => await AsyncStorage.clear(),
-      [State, Todos, TodoItem, Filter] // All custom classes in the state (except native JavaScript ones).
-    );
-  }
-}
-
-const userExceptionDialog: ShowUserException =
-  (exception, count, next) => {
-    Alert.alert(
-      exception.title || exception.message,
-      exception.title ? exception.message : '',
-      [{text: 'OK', onPress: (_value?: string) => next()}]
-    );
-  };
-
-const AppContent: React.FC = () => {
+export const AppContent: React.FC = () => {
   return (
     <View style={{flex: 1}}>
       <Text style={{textAlign: 'center', padding: 16, fontSize: 35, color: '#A44'}}>Todos</Text>
@@ -292,8 +243,9 @@ const styles = StyleSheet.create({
   },
   helperText: {
     color: 'red',
-    fontSize: 12,
+    fontSize: 14,
     marginLeft: 10,
+    marginBottom: 10,
   },
   label: {
     marginBottom: 8

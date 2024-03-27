@@ -1,11 +1,4 @@
-import {
-  PersistAction,
-  PersistException,
-  Persistor,
-  PersistorDummy,
-  PersistorPrinterDecorator,
-  SetStateDontPersistAction
-} from './Persistor';
+import { PersistAction, PersistException, Persistor, PersistorDummy, PersistorPrinterDecorator, } from './Persistor';
 import { ClassPersistor } from './ClassPersistor';
 import { ProcessPersistence } from './ProcessPersistence';
 import {
@@ -17,7 +10,8 @@ import {
   ReduxReducer,
   Retry,
   RetryOptions,
-  SyncReducer
+  SyncReducer,
+  UpdateStateAction,
 } from './ReduxAction';
 import { ShowUserException, Store, StoreProvider, } from './Store';
 import {
@@ -38,7 +32,7 @@ import { StoreException } from './StoreException';
 import { UserException } from './UserException';
 
 export {
-  Persistor, PersistorPrinterDecorator, PersistorDummy, PersistException, PersistAction, SetStateDontPersistAction,
+  Persistor, PersistorPrinterDecorator, PersistorDummy, PersistException, PersistAction, UpdateStateAction,
   ClassPersistor,
   ProcessPersistence,
   ReduxAction,

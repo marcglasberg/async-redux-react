@@ -1,4 +1,4 @@
-import { Action } from './Action';
+import { Action } from '../infra/Action';
 import { Filter } from './Filter';
 
 export class NextFilterAction extends Action {

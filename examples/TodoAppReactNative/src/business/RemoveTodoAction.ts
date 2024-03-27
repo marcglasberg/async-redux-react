@@ -1,5 +1,5 @@
-import { TodoItem } from './Todos';
-import { Action } from './Action';
+import { TodoItem } from './Todos.ts';
+import { Action } from '../infra/Action.ts';
 
 export class RemoveTodoAction extends Action {
 
