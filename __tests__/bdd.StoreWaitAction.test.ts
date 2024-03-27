@@ -75,12 +75,12 @@ test('waitActionType', async () => {
   // Returns a promise that resolves when the actions of the given type is NOT in progress.
   // Since no actions are currently in progress, the promise resolves immediately.
   let store = new Store<State>({initialState: new State(1), logger: logger});
-  await store.waitActionType(DelayedAction, true);
+  await store.waitActionType(DelayedAction, {completeImmediately: true});
 
   // Again, since no actions are currently in progress, the promise resolves immediately.
   // The timeout is irrelevant.
   store = new Store<State>({initialState: new State(1), logger: logger});
-  await store.waitActionType(DelayedAction, true, 1);
+  await store.waitActionType(DelayedAction, {completeImmediately: true, timeoutMillis: 1});
 
   // An action of the given type is in progress.
   // But then the action ends.
@@ -93,7 +93,7 @@ test('waitActionType', async () => {
   store = new Store<State>({initialState: new State(1), logger: logger});
   store.dispatch(new DelayedAction(1, 1000));
   await expect(
-    store.waitActionType(DelayedAction, false, 1)
+    store.waitActionType(DelayedAction, {completeImmediately: false, timeoutMillis: 1})
   ).rejects.toThrow(TimeoutException);
 });
 

@@ -31,9 +31,11 @@
 
 .inputWrapper {
     display: flex;
-    align-items: stretch;
-    margin-bottom: 10px;
+    margin-bottom: 24px;
+    align-items: flex-start;
+    height: 55px;
 }
+
 
 .inputField {
     flex: 1;

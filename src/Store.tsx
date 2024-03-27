@@ -1,12 +1,10 @@
-import React, { createContext, Dispatch, SetStateAction, useContext, useState } from 'react';
+import React, { createContext, useState } from 'react';
 import { UserException } from './UserException';
-import { Persistor, SetStateDontPersistAction } from './Persistor';
+import { Persistor } from './Persistor';
 import { ActionStatus, AsyncReducer, AsyncReducerResult, ReduxAction, ReduxReducer, RetryOptions } from './ReduxAction';
 import { ProcessPersistence } from './ProcessPersistence';
 import { StoreException, TimeoutException } from './StoreException';
 import { UnmodifiableSetView } from "./UnmodifiableSetView";
-
-export type ShowUserException = (exception: UserException, count: number, next: () => void) => void;
 
 interface ConstructorParams<St> {
 
@@ -201,6 +199,22 @@ interface ConstructorParams<St> {
   errorObserver?: (error: any, action: ReduxAction<St>, store: Store<St>) => boolean;
 }
 
+class RefState<St, T> {
+  selectorAndValueAndSetValue: [(state: St) => T, T, React.Dispatch<React.SetStateAction<T>>];
+
+  constructor(selectorAndValueAndSetValue: [(state: St) => T, T, React.Dispatch<React.SetStateAction<T>>]) {
+    this.selectorAndValueAndSetValue = selectorAndValueAndSetValue;
+  }
+}
+
+class RefStore<St, T> {
+  selectorAndValueAndSetValue: [(store: Store<St>) => T, T, React.Dispatch<React.SetStateAction<T>>];
+
+  constructor(selectorAndValueAndSetValue: [(store: Store<St>) => T, T, React.Dispatch<React.SetStateAction<T>>]) {
+    this.selectorAndValueAndSetValue = selectorAndValueAndSetValue;
+  }
+}
+
 /**
  * The store holds the state of the application and allows the state to be updated
  * by dispatching actions. The store is also responsible for showing user exceptions
@@ -208,6 +222,59 @@ interface ConstructorParams<St> {
  * to show spinners while async operations are in progress, and more.
  */
 export class Store<St> {
+
+  public _refStateHooks: Set<React.MutableRefObject<RefState<St, any> | undefined>> = new Set();
+  public _refStoreHooks: Set<React.MutableRefObject<RefStore<St, any> | undefined>> = new Set();
+
+  // Rebuilds components because of STATE changes.
+  //
+  // We save in the ref:
+  // - The selector
+  // - The currently selected value
+  // - The setValue function
+  //
+  // Whenever the state changes, the store will:
+  // 1. Retrieve all refs
+  // 2. Apply each selector to the current state to calculate the selected value.
+  // 3. And compare the selected value with the last selected value.
+  // 4. If it changed, it calls setValue.
+  private _processStateHooks() {
+    this._refStateHooks.forEach((hookRef) => {
+      if (hookRef.current) {
+        const [selector, currentValue, setValue] = hookRef.current.selectorAndValueAndSetValue;
+        const newSelectedValue = selector(this._state);
+        if (newSelectedValue !== currentValue) {
+          setValue(newSelectedValue);
+          hookRef.current.selectorAndValueAndSetValue[1] = newSelectedValue; // Update the current value in the ref
+        }
+      }
+    });
+  }
+
+  /// Rebuilds components because of `isWaiting`, `isFailed`, `exceptionFor` and `clearExceptionFor`.
+  //
+  // We save in the ref:
+  // - The selector
+  // - The currently selected value
+  // - The setValue function
+  //
+  // Whenever the store method results changes, the store will:
+  // 1. Retrieve all refs
+  // 2. Apply each selector to the current store to calculate the selected value.
+  // 3. And compare the selected value with the last selected value.
+  // 4. If it changed, it calls setValue.
+  private _processStoreHooks() {
+    this._refStoreHooks.forEach((hookRef) => {
+      if (hookRef.current) {
+        const [selector, currentValue, setValue] = hookRef.current.selectorAndValueAndSetValue;
+        const newSelectedValue = selector(this);
+        if (newSelectedValue !== currentValue) {
+          setValue(newSelectedValue);
+          hookRef.current.selectorAndValueAndSetValue[1] = newSelectedValue; // Update the current value in the ref
+        }
+      }
+    });
+  }
 
   /**
    * The default is `(obj: any) => console.log(obj);`
@@ -274,13 +341,6 @@ export class Store<St> {
 
   private readonly _processPersistence: ProcessPersistence<St> | null;
   private _dispatchCount = 0;
-
-  private _updateCount = 0;
-  private _forceUiUpdateFunction: Dispatch<SetStateAction<number>> | null;
-
-  private _forceUiUpdate() {
-    this._forceUiUpdateFunction?.(++this._updateCount);
-  }
 
   // A function that shows `UserExceptions` to the user, using some UI like a dialog or a toast.
   // This function is passed to the constructor. If not passed, the `UserException` is ignored.
@@ -399,7 +459,6 @@ export class Store<St> {
     this._awaitableActions = new Set();
     this._failedActions = new Map<new (...args: any[]) => ReduxAction<St>, ReduxAction<St>>();
     this._actionsWeCanCheckFailed = new Set();
-    this._forceUiUpdateFunction = null;
     Store.log = logger || this._defaultLogger;
 
     if (this._processPersistence != null) {
@@ -418,7 +477,7 @@ export class Store<St> {
   /**
    * Dispatches the action to the Redux store, to potentially change the state.
    */
-  dispatch(action: ReduxAction<St>) {
+  dispatch(action: ReduxAction<St>): void {
     let mockedActionOrAction = this._mockActionOrNot(action);
 
     // 1) If mocked as `null`, the action is ignored.
@@ -445,9 +504,6 @@ export class Store<St> {
    * progress.
    *
    * Usage: `await store.dispatchAndWait(new MyAction())`.
-   *
-   * See also:
-   * - `waitNoActionsInProgress`
    */
   dispatchAndWait(action: ReduxAction<St>): Promise<ActionStatus> {
 
@@ -481,7 +537,7 @@ export class Store<St> {
    * The only use for `dispatchSync` is when you need to guarantee (in runtime) that your
    * action is SYNC, which means the state gets changed right after the dispatch call.
    */
-  dispatchSync(action: ReduxAction<St>) {
+  dispatchSync(action: ReduxAction<St>): void {
     let mockedActionOrAction = this._mockActionOrNot(action);
 
     // 1) If mocked as `null`, the action is ignored.
@@ -534,16 +590,12 @@ export class Store<St> {
     this._dispatchCount++;
     Store.log(`${this._dispatchCount}) ${action}`);
 
-    if (this._forceUiUpdateFunction === null && !(action instanceof SetStateDontPersistAction))
-      Store.log('Make sure you wrapped the component tree with <StoreProvider store={store}>');
-
     if (action.status.isDispatched)
       throw new StoreException('The action was already dispatched. Please, create a new action each time.');
 
     action._changeStatus({isDispatched: true});
 
-    // We inject the store so that the action can access it (and state, dispatch etc)
-    // as an object property.
+    // We inject the store so that the action can access it as an object property.
     action._injectStore(this);
 
     // The action is dispatched twice. This is the 1st: when the action starts (ini true).
@@ -574,7 +626,7 @@ export class Store<St> {
       // Then we notify the UI. Note we don't notify if the action was never checked.
       if (wasInTheList) {
         theUIHasAlreadyUpdated = true;
-        this._forceUiUpdate();
+        this._processStoreHooks();
       }
     }
 
@@ -585,7 +637,7 @@ export class Store<St> {
     // the action is awaitable (that is to say, we have already called `isWaiting` for this action),
     if (!theUIHasAlreadyUpdated && this._awaitableActions.has(action.constructor as new (...args: any[]) => ReduxAction<St>)) {
       // Then we notify the UI. Note we don't notify if the action was never checked.
-      this._forceUiUpdate();
+      this._processStoreHooks();
     }
   }
 
@@ -725,7 +777,7 @@ export class Store<St> {
     // Note: If the state was applied, this was already removed and the UI updated.
     const removed = this._actionsInProgress.delete(action);
     if (removed) {
-      this._forceUiUpdate();
+      this._processStoreHooks();
 
       // Check the wait-conditions after state change. We pass it the trigger-action.
       this._checkAllActionConditions(action);
@@ -1015,20 +1067,24 @@ export class Store<St> {
 
     if (newState !== null && newState !== this._state) {
       this._state = newState;
+      this._processStateHooks();
 
       // Observe the state with null error, because the reducer completed normally.
       this._stateObserver?.(action, prevState, newState, null, this._dispatchCount);
 
       this._record(action, false, prevState, newState, null);
 
+      // ---
+
       // Remove the wait state for the action in progress.
       // Note: We do this here, before updating the UI.
       const removed = this._actionsInProgress.delete(action);
 
       // Check the wait-conditions after state change. We pass it the trigger-action.
-      if (removed) this._checkAllActionConditions(action);
-
-      this._forceUiUpdate();
+      if (removed) {
+        this._processStoreHooks();
+        this._checkAllActionConditions(action);
+      }
 
       // Check the wait-conditions after state change.
       this._waitConditions = this._waitConditions.filter(condition => {
@@ -1141,10 +1197,10 @@ export class Store<St> {
   }
 
   /**
-   * Returns true if an [actionOrActionTypeOrList] failed with an [UserException].
-   * Note: This method uses the EXACT type in [actionOrActionTypeOrList]. Subtypes are not considered.
+   * Returns true if the given action `type` failed with an `UserException`.
+   * Note: This method uses the EXACT action type. Subtypes are not considered.
    */
-  isFailed<T extends ReduxAction<St>>(type: { new(...args: any[]): T }): boolean {
+  isFailed<T extends ReduxAction<any>>(type: { new(...args: any[]): T }): boolean {
     return this.exceptionFor(type) !== null;
   }
 
@@ -1160,21 +1216,21 @@ export class Store<St> {
   }
 
   /**
-   * Removes the given `type` from the list of action types that failed.
+   * Removes the exact given action `type` from the list of action types that failed.
+   * Note it clears the EXACT given type. Subtypes are not considered.
    *
-   * Note that dispatching an action already removes that action type from the exceptions list.
-   * This removal happens as soon as the action is dispatched, not when it finishes.
+   * Even if you never call this method explicitly, just dispatching an action already clears that action type
+   * from the list of failing action types. But you can call this method explicitly if you want to clear the
+   * action type before it's used again.
    *
-   * Note: This method uses the EXACT type. Subtypes are not considered.
+   * Usage:
+   * ```ts
+   * store.clearExceptionFor(MyAction);
+   * ```
    */
   clearExceptionFor<T extends ReduxAction<St>>(type: { new(...args: any[]): T }): void {
     let result = this._failedActions.delete(type);
-    if (result) this._forceUiUpdate();
-  }
-
-  // TODO: MARCELO Change this.
-  _inject(forceUpdate: Dispatch<SetStateAction<number>>) {
-    this._forceUiUpdateFunction = forceUpdate;
+    if (result) this._processStoreHooks();
   }
 
   static describeStateChange(obj1: any, obj2: any, path: string = ''): String {
@@ -1629,7 +1685,9 @@ export class Store<St> {
     }: {
       completeImmediately?: boolean,
       timeoutMillis?: number | null
-    } = {}) {
+    } = {})
+    : Promise<{ actions: Set<ReduxAction<St>>, triggerAction: ReduxAction<St> | null }> {
+
     if (!actions || (actions.length === 0)) {
       return this.waitActionCondition(
         (actions) => actions.size === 0,
@@ -1751,9 +1809,13 @@ export class Store<St> {
     actionType: {
       new(...args: any[]): ReduxAction<St>
     },
-    completeImmediately: boolean = false,
-    timeoutMillis: number | null = null
-  ) {
+    {
+      completeImmediately = false,
+      timeoutMillis = null
+    }: {
+      completeImmediately?: boolean,
+      timeoutMillis?: number | null
+    } = {}): Promise<ReduxAction<St> | null> {
     let {actions, triggerAction} = await this.waitActionCondition(
       (actionsInProgress, triggerAction) => {
         return !(Array.from(actionsInProgress).some((action) => action.constructor === actionType));
@@ -1861,7 +1923,8 @@ export class Store<St> {
     }: {
       completeImmediately?: boolean,
       timeoutMillis?: number | null
-    } = {}) {
+    } = {}): Promise<void> {
+
     if (actionTypes.length === 0) {
       await this.waitActionCondition(
         (actions, triggerAction) => actions.size === 0,
@@ -1982,7 +2045,11 @@ export class Store<St> {
    */
   async waitAnyActionTypeFinishes(
     actionTypes: { new(...args: any[]): ReduxAction<St> }[],
-    {timeoutMillis = null}: { timeoutMillis?: number | null }
+    {
+      timeoutMillis = null
+    }: {
+      timeoutMillis?: number | null
+    }
   ): Promise<ReduxAction<St>> {
 
     const {triggerAction} = await this.waitActionCondition(
@@ -2029,28 +2096,17 @@ interface StoreProviderProps<St> {
   children: React.ReactNode;
 }
 
-interface StoreContextType<St> {
+export interface StoreContextType<St> {
   store: Store<St> | null;
 }
 
-const StoreContext = createContext<StoreContextType<any>>({
+export const StoreContext = createContext<StoreContextType<any>>({
   store: null
 });
 
-export function useStore<St>(): Store<St> {
-  const context = useContext<StoreContextType<St>>(StoreContext) as StoreContextType<St>;
-  if (context === undefined) {
-    throw new StoreException('useStore must be used within a StoreProvider');
-  }
-  return context.store as Store<St>;
-}
 
 export function StoreProvider<St>({store, children}: StoreProviderProps<St>): JSX.Element {
   const [_store] = useState<Store<St>>(store);
-  const [_, forceUpdate] = useState(store.dispatchCount);
-
-  _store?._inject(forceUpdate);
-
   return (
     <StoreContext.Provider value={{store: _store}}>
       {children}
@@ -2079,4 +2135,6 @@ class Mocks<St> {
     return this.mocks.get(actionType);
   }
 }
+
+export type ShowUserException = (exception: UserException, count: number, next: () => void) => void;
 

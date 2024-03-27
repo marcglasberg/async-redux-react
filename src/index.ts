@@ -1,21 +1,54 @@
-import { Persistor } from './Persistor';
+import {
+  PersistAction,
+  PersistException,
+  Persistor,
+  PersistorDummy,
+  PersistorPrinterDecorator,
+  SetStateDontPersistAction
+} from './Persistor';
 import { ClassPersistor } from './ClassPersistor';
 import { ProcessPersistence } from './ProcessPersistence';
-import { ActionStatus, AsyncReducer, AsyncReducerResult, ReduxAction, ReduxReducer, SyncReducer } from './ReduxAction';
-import { ShowUserException, Store, StoreProvider, useStore } from './Store';
+import {
+  ActionStatus,
+  AsyncReducer,
+  AsyncReducerResult,
+  OptimisticUpdate,
+  ReduxAction,
+  ReduxReducer,
+  Retry,
+  RetryOptions,
+  SyncReducer
+} from './ReduxAction';
+import { ShowUserException, Store, StoreProvider, } from './Store';
+import {
+  useAllState,
+  useClearExceptionFor,
+  useDispatch,
+  useDispatchAndWait,
+  useDispatcher,
+  useDispatchSync,
+  useExceptionFor,
+  useIsFailed,
+  useIsWaiting,
+  useSelect,
+  useSelector,
+  useStore,
+} from './Hooks';
 import { StoreException } from './StoreException';
 import { UserException } from './UserException';
 
 export {
-  Persistor,
+  Persistor, PersistorPrinterDecorator, PersistorDummy, PersistException, PersistAction, SetStateDontPersistAction,
   ClassPersistor,
   ProcessPersistence,
   ReduxAction,
   ActionStatus, ReduxReducer, SyncReducer, AsyncReducer, AsyncReducerResult,
-  Store,
-  useStore, StoreProvider, ShowUserException,
+  Store, useStore, useAllState, useSelect, useSelector, StoreProvider, ShowUserException,
+  useIsWaiting, useIsFailed, useExceptionFor, useClearExceptionFor,
+  useDispatch, useDispatchAndWait, useDispatchSync, useDispatcher,
   StoreException,
-  UserException
+  UserException,
+  OptimisticUpdate, Retry, RetryOptions,
 };
 
 

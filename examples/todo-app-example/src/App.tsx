@@ -1,5 +1,19 @@
 import React, { useState } from 'react';
-import { ClassPersistor, ShowUserException, Store, StoreProvider, useStore } from 'async-redux-react';
+import {
+  ClassPersistor,
+  ShowUserException,
+  Store,
+  StoreProvider,
+  useAllState,
+  useClearExceptionFor,
+  useDispatch,
+  useExceptionFor,
+  useIsFailed,
+  useIsWaiting,
+  UserException,
+  useSelect,
+  useStore,
+} from 'async-redux-react';
 import {
   Button,
   Checkbox,
@@ -40,7 +54,7 @@ export function App() {
   function getPersistor() {
     return new ClassPersistor<State>(
       async () => window.localStorage.getItem('state'),
-      async (serialized) => window.localStorage.setItem('state', serialized),
+      async (serialized: string) => window.localStorage.setItem('state', serialized),
       async () => window.localStorage.clear(),
       [State, Todos, TodoItem, Filter]
     );
@@ -72,7 +86,7 @@ export function App() {
  *   };
  * ```
  */
-const userExceptionDialog: ShowUserException = (exception, _count, next) => {
+const userExceptionDialog: ShowUserException = (exception: UserException, _count: number, next: () => void) => {
 
   const container = document.getElementById('dialog-root');
   if (!container) return;
@@ -115,10 +129,11 @@ const AppContent: React.FC = () => {
 const TodoInput: React.FC = () => {
 
   const [inputText, setInputText] = useState<string>('');
-  const store = useStore<State>();
 
-  let isFailed = store.isFailed(AddTodoAction);
-  let errorText = store.exceptionFor(AddTodoAction)?.errorText ?? '';
+  const store = useStore();
+  let isFailed = useIsFailed(AddTodoAction);
+  let errorText = useExceptionFor(AddTodoAction)?.errorText ?? '';
+  let clearExceptionFor = useClearExceptionFor();
 
   async function sendInputToStore(inputText: string) {
     let status = await store.dispatchAndWait(new AddTodoAction(inputText));
@@ -127,20 +142,23 @@ const TodoInput: React.FC = () => {
 
   return (
     <div className='inputWrapper'>
+
       <TextField className='inputField'
-                 placeholder={isFailed ? errorText : "Type here..."}
+                 inputProps={{style: {paddingTop: 0, paddingBottom: 0, height: 55}}}
                  error={isFailed}
+                 helperText={isFailed ? errorText : ""}
                  value={inputText}
                  onChange={(e) => {
                    const capitalizedText = e.target.value.charAt(0).toUpperCase() + e.target.value.slice(1);
                    setInputText(capitalizedText);
-                   store.clearExceptionFor(AddTodoAction);
+                   clearExceptionFor(AddTodoAction);
                  }}
                  onKeyDown={(e) => {
                    if (e.key === 'Enter') sendInputToStore(inputText);
                  }}
       />
-      <Button variant="contained" color="primary" onClick={() => sendInputToStore(inputText)}>
+      <Button style={{height: 55}} variant="contained" color="primary"
+              onClick={() => sendInputToStore(inputText)}>
         Add
       </Button>
     </div>
@@ -148,11 +166,11 @@ const TodoInput: React.FC = () => {
 };
 
 const NoTodosWarning: React.FC = () => {
-  const store = useStore<State>();
-  let filter = store.state.filter;
-  let count = store.state.todos.count(filter);
-  let countCompleted = store.state.todos.count(Filter.showCompleted);
-  let countActive = store.state.todos.count(Filter.showActive);
+  const storeState = useAllState<State>();
+  let filter = storeState.filter;
+  let count = storeState.todos.count(filter);
+  let countCompleted = storeState.todos.count(Filter.showCompleted);
+  let countActive = storeState.todos.count(Filter.showActive);
 
   if (count === 0) {
     let warningText = '';
@@ -185,15 +203,18 @@ const NoTodosWarning: React.FC = () => {
   return <div></div>;
 };
 const TodoList: React.FC = () => {
-  const store = useStore<State>();
-  let filter = store.state.filter;
-  let count = store.state.todos.count(filter);
+  const store = useStore();
+  const storeState = useAllState<State>();
+  const filter = useSelect((state: State) => state.filter);
+  const count = useSelect((state: State) => state.todos.count(filter));
+
+  let items: TodoItem[] = useSelect((state: State) => state.todos.items);
 
   if (count === 0) return <NoTodosWarning/>;
 
   else {
     const filterTodos = (item: TodoItem) => {
-      switch (store.state.filter) {
+      switch (storeState.filter) {
         case Filter.showCompleted:
           return item.completed;
         case Filter.showActive:
@@ -206,7 +227,7 @@ const TodoList: React.FC = () => {
 
     return (
       <div className='todoListDiv'>
-        {store.state.todos.items.filter(filterTodos).map((item, index) => (
+        {items.filter(filterTodos).map((item, index) => (
           <FormControlLabel
             key={index}
             control={
@@ -225,7 +246,8 @@ const TodoList: React.FC = () => {
 };
 
 const FilterButton: React.FC = () => {
-  const store = useStore<State>();
+  const store = useStore();
+  const storeState = useAllState<State>();
 
   return (
     <Button style={{display: "block", width: '100%', height: '60px', marginBottom: "10px"}}
@@ -234,38 +256,38 @@ const FilterButton: React.FC = () => {
               store.dispatch(new NextFilterAction());
             }}
     >
-      {store.state.filter}
+      {storeState.filter}
     </Button>
   );
 };
 
 const RemoveAllButton: React.FC = () => {
-  const store = useStore<State>();
-  let disabled = store.isWaiting(RemoveCompletedTodosAction);
+  const dispatch = useDispatch();
+  let isDisabled = useIsWaiting(RemoveCompletedTodosAction);
 
   return (
     <Button style={{display: "block", width: '100%', height: '60px', marginBottom: "10px", color: 'white'}}
-            disabled={disabled}
+            disabled={isDisabled}
             variant="contained"
-            onClick={() => store.dispatch(new RemoveCompletedTodosAction())}
+            onClick={() => dispatch(new RemoveCompletedTodosAction())}
     >
-      {disabled ? <CircularProgress size={24} color='inherit'/> : 'Remove Completed Todos'}
+      {isDisabled ? <CircularProgress size={24} color='inherit'/> : 'Remove Completed Todos'}
     </Button>
   );
 };
 
 const AddRandomTodoButton: React.FC = () => {
-  const store = useStore<State>();
-  let loading = store.isWaiting(AddRandomTodoAction);
-  let failed = store.isFailed(AddRandomTodoAction);
+  let isLoading = useIsWaiting(AddRandomTodoAction);
+  const store = useStore();
+
+  console.log('isLoading = ' + isLoading);
 
   return (
     <Button style={{display: "block", width: '100%', height: '60px', marginBottom: "10px", color: 'white'}}
             variant="contained"
             onClick={() => store.dispatch(new AddRandomTodoAction())}
     >
-      {loading ? <CircularProgress size={24} color='inherit'/> : 'Add Random Todo'}
-      {failed ? ' - FAILED' : ' - NOT FAILED'}
+      {isLoading ? <CircularProgress size={24} color='inherit'/> : 'Add Random Todo'}
     </Button>
   );
 };

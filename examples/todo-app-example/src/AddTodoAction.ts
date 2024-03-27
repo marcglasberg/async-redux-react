@@ -13,7 +13,7 @@ export class AddTodoAction extends Action {
     if (this.state.todos.ifExists(this.text)) {
       throw new UserException(
         `The item "${this.text}" already exists.`, {
-          errorText: `Type something else other than "${this.text}"...`
+          errorText: `Type something else other than "${this.text}"`
         });
     }
 

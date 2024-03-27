@@ -1,11 +1,5 @@
 import React, { useState } from 'react';
-import {
-  ClassPersistor,
-  ShowUserException,
-  Store,
-  StoreProvider,
-  useStore
-} from 'async-redux-react';
+import { ClassPersistor, ShowUserException, Store, StoreProvider, useStore } from 'async-redux-react';
 import {
   ActivityIndicator,
   Alert,
@@ -39,7 +33,7 @@ export function App() {
   return (
     <StoreProvider store={store}>
       <SafeAreaProvider>
-        <AppContent />
+        <AppContent/>
       </SafeAreaProvider>
     </StoreProvider>
   );
@@ -61,19 +55,19 @@ const userExceptionDialog: ShowUserException =
     Alert.alert(
       exception.title || exception.message,
       exception.title ? exception.message : '',
-      [{ text: 'OK', onPress: (_value?: string) => next() }]
+      [{text: 'OK', onPress: (_value?: string) => next()}]
     );
   };
 
 const AppContent: React.FC = () => {
   return (
-    <View style={{ flex: 1 }}>
-      <Text style={{ textAlign: 'center', padding: 16, fontSize: 35, color: '#A44' }}>Todos</Text>
-      <TodoInput />
-      <TodoList />
-      <FilterButton />
-      <AddRandomTodoButton />
-      <RemoveAllButton />
+    <View style={{flex: 1}}>
+      <Text style={{textAlign: 'center', padding: 16, fontSize: 35, color: '#A44'}}>Todos</Text>
+      <TodoInput/>
+      <TodoList/>
+      <FilterButton/>
+      <AddRandomTodoButton/>
+      <RemoveAllButton/>
     </View>
   );
 };
@@ -81,7 +75,7 @@ const AppContent: React.FC = () => {
 const TodoInput: React.FC = () => {
 
   const [inputText, setInputText] = useState<string>('');
-  const store = useStore<State>();
+  const store = useStore();
 
   let isFailed = store.isFailed(AddTodoAction);
   let errorText = store.exceptionFor(AddTodoAction)?.errorText ?? '';
@@ -92,24 +86,27 @@ const TodoInput: React.FC = () => {
   }
 
   return (
-    <View style={styles.inputRow}>
+    <View>
+      <View style={styles.inputRow}>
 
-      <TextInput
-        placeholder={isFailed ? errorText : 'Type here...'}
-        value={inputText}
-        style={[styles.input, isFailed ? styles.inputError : null]}
-        onChangeText={(text) => {
-          const capitalizedText = text.charAt(0).toUpperCase() + text.slice(1);
-          setInputText(capitalizedText);
-          store.clearExceptionFor(AddTodoAction);
-        }}
-        onSubmitEditing={() => sendInputToStore(inputText)}
-      />
+        <TextInput
+          placeholder={'Type here...'}
+          value={inputText}
+          style={[styles.input, isFailed ? styles.inputError : null]}
+          onChangeText={(text) => {
+            const capitalizedText = text.charAt(0).toUpperCase() + text.slice(1);
+            setInputText(capitalizedText);
+            store.clearExceptionFor(AddTodoAction);
+          }}
+          onSubmitEditing={() => sendInputToStore(inputText)}
+        />
 
-      <TouchableOpacity onPress={() => sendInputToStore(inputText)} style={styles.button}>
-        <Text style={styles.footerButtonText}>Add</Text>
-      </TouchableOpacity>
+        <TouchableOpacity onPress={() => sendInputToStore(inputText)} style={styles.button}>
+          <Text style={styles.footerButtonText}>Add</Text>
+        </TouchableOpacity>
 
+      </View>
+      {isFailed && <Text style={styles.helperText}>{errorText}</Text>}
     </View>
   );
 };
@@ -117,7 +114,7 @@ const TodoInput: React.FC = () => {
 
 const NoTodosWarning: React.FC = () => {
 
-  const store = useStore<State>();
+  const store = useStore();
   let filter = store.state.filter;
   let count = store.state.todos.count(filter);
   let countCompleted = store.state.todos.count(Filter.showCompleted);
@@ -126,13 +123,13 @@ const NoTodosWarning: React.FC = () => {
   if (count === 0) {
     if (filter === Filter.showAll)
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
           <Text style={styles.dimmedText}>No todos</Text>
         </View>
       );
     else if (filter === Filter.showActive) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
           {countCompleted !== 0 ? (
             <>
               <Text style={styles.dimmedText}>No active todos</Text>
@@ -146,7 +143,7 @@ const NoTodosWarning: React.FC = () => {
       );
     } else if (filter === Filter.showCompleted) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
           {countActive !== 0 ? (
             <>
               <Text style={styles.dimmedText}>No completed todos</Text>
@@ -160,17 +157,17 @@ const NoTodosWarning: React.FC = () => {
     } else throw new Error('Invalid filter: ' + filter);
   }
   //
-  else return <View />;
+  else return <View/>;
 };
 
 const TodoList: React.FC = () => {
 
-  const store = useStore<State>();
+  const store = useStore();
   let filter = store.state.filter;
   let count = store.state.todos.count(filter);
 
   // No todos to show with the current filter.
-  if (count === 0) return <NoTodosWarning />;
+  if (count === 0) return <NoTodosWarning/>;
     //
   // Show the list of todoItems.
   else {
@@ -187,7 +184,7 @@ const TodoList: React.FC = () => {
     };
 
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{flex: 1}}>
 
         <ScrollView>
           {store.state.todos.items.filter(filterTodos).map((item, index) => (
@@ -200,7 +197,7 @@ const TodoList: React.FC = () => {
               fillColor="#555"
               unfillColor="#FFE"
               text={item.text}
-              innerIconStyle={{ borderWidth: 2 }}
+              innerIconStyle={{borderWidth: 2}}
               onPress={(_) => {
                 store.dispatch(new ToggleTodoAction(item));
               }}
@@ -208,7 +205,7 @@ const TodoList: React.FC = () => {
           ))}
         </ScrollView>
         <View
-          style={{ backgroundColor: '#CCC', height: 0.75, marginTop: 10, marginHorizontal: 15 }
+          style={{backgroundColor: '#CCC', height: 0.75, marginTop: 10, marginHorizontal: 15}
           }
         />
       </View>
@@ -218,7 +215,7 @@ const TodoList: React.FC = () => {
 
 const FilterButton: React.FC = () => {
 
-  const store = useStore<State>();
+  const store = useStore();
 
   // <View style={{ paddingVertical: 20 }}>
   return (
@@ -236,7 +233,7 @@ const FilterButton: React.FC = () => {
 
 const RemoveAllButton: React.FC = () => {
 
-  const store = useStore<State>();
+  const store = useStore();
   let disabled = store.isWaiting(RemoveCompletedTodosAction);
 
   return (
@@ -249,7 +246,7 @@ const RemoveAllButton: React.FC = () => {
     >
 
       {disabled ? (
-        <ActivityIndicator size="small" color="#ffffff" />
+        <ActivityIndicator size="small" color="#ffffff"/>
       ) : (
         <Text style={styles.footerButtonText}>Remove Completed Todos</Text>
       )}
@@ -260,7 +257,7 @@ const RemoveAllButton: React.FC = () => {
 
 const AddRandomTodoButton: React.FC = () => {
 
-  const store = useStore<State>();
+  const store = useStore();
   let loading = store.isWaiting(AddRandomTodoAction);
 
   return (
@@ -272,7 +269,7 @@ const AddRandomTodoButton: React.FC = () => {
     >
 
       {loading ? (
-        <ActivityIndicator size="small" color="#ffffff" />
+        <ActivityIndicator size="small" color="#ffffff"/>
       ) : (
         <Text style={styles.footerButtonText}>Add Random Todo</Text>
       )}
@@ -292,6 +289,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     paddingRight: 10
+  },
+  helperText: {
+    color: 'red',
+    fontSize: 12,
+    marginLeft: 10,
   },
   label: {
     marginBottom: 8
