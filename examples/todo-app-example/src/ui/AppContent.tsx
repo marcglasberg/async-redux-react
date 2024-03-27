@@ -44,8 +44,8 @@ const TodoInput: React.FC = () => {
   let errorText = useExceptionFor(AddTodoAction)?.errorText ?? '';
   let clearExceptionFor = useClearExceptionFor();
 
-  async function sendInputToStore(inputText: string) {
-    const status = await store.dispatchAndWait(new AddTodoAction(inputText))
+  async function sendInputToStore(text: string) {
+    const status = await store.dispatchAndWait(new AddTodoAction(text))
     if (status.isCompletedOk) setInputText(''); // If added, clean the text from the TextField.
   }
 
@@ -119,18 +119,18 @@ const NoTodosWarning: React.FC = () => {
 };
 
 const TodoList: React.FC = () => {
+
   const store = useStore();
-  const storeState = useAllState<State>();
   const filter = useSelect((state: State) => state.filter);
   const count = useSelect((state: State) => state.todos.count(filter));
-
   let items: TodoItem[] = useSelect((state: State) => state.todos.items);
 
+  // No todos to show with the current filter.
   if (count === 0) return <NoTodosWarning/>;
-
+  //
   else {
     const filterTodos = (item: TodoItem) => {
-      switch (storeState.filter) {
+      switch (filter) {
         case Filter.showCompleted:
           return item.completed;
         case Filter.showActive:
@@ -163,7 +163,7 @@ const TodoList: React.FC = () => {
 
 const FilterButton: React.FC = () => {
   const store = useStore();
-  const storeState = useAllState<State>();
+  const state = useAllState<State>();
 
   return (
     <Button style={{display: "block", width: '100%', height: '60px', marginBottom: "10px"}}
@@ -172,7 +172,7 @@ const FilterButton: React.FC = () => {
               store.dispatch(new NextFilterAction());
             }}
     >
-      {storeState.filter}
+      {state.filter}
     </Button>
   );
 };
