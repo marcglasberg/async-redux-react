@@ -346,10 +346,10 @@ export abstract class ReduxAction<St> {
    *
    * The retry parameters are:
    *
-   * - Initial Delay: The delay before the first retry attempt.
+   * - Initial Delay: Millisecond delay before the first retry attempt.
    * - Multiplier: The factor by which the delay increases for each subsequent retry.
    * - Maximum Retries: The maximum number of retries before giving up.
-   * - Maximum Delay: The maximum delay between retries to avoid excessively long wait times.
+   * - Maximum Delay: The maximum millisecond delay between retries to avoid excessively long wait times.
    *
    *  And their default values are:
    *
