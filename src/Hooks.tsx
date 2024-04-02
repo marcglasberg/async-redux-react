@@ -153,6 +153,12 @@ export function useDispatcher(): (action: ReduxAction<any>) => void {
  * const store = useStore();
  * dispatch(MyAction());
  * ```
+ *
+ * See also:
+ * - `dispatchAll` which dispatches all given actions in parallel.
+ * - `dispatchSync` which dispatches sync actions, and throws if the action is async.
+ * - `dispatchAndWait` which dispatches both sync and async actions, and returns a Promise.
+ * - `dispatchAndWaitAll` which dispatches all given actions, and returns a Promise.
  */
 export function useDispatch(): (action: ReduxAction<any>) => void {
   let store = _useStoreFromContext<any>();
@@ -165,11 +171,66 @@ export function useDispatch(): (action: ReduxAction<any>) => void {
  * resolves, other independent processes that the action may have started may still be in
  * progress.
  *
- * Usage: `await store.dispatchAndWait(new MyAction())`.
+ * Usage:
+ * ```ts
+ * const dispatchAndWait = useDispatchAndWait();
+ * await dispatchAndWait(new MyAction())`.
+ * ```
+ *
+ * See also:
+ * - `dispatch` which dispatches both sync and async actions.
+ * - `dispatchSync` which dispatches sync actions, and throws if the action is async.
+ * - `dispatchAll` which dispatches all given actions in parallel.
+ * - `dispatchAndWaitAll` which dispatches all given actions, and returns a Promise.
  */
 export function useDispatchAndWait(): (action: ReduxAction<any>) => Promise<ActionStatus> {
   let store = _useStoreFromContext<any>();
   return store.dispatchAndWait.bind(store);
+}
+
+/**
+ * Dispatches all given actions in parallel, applying their reducers, and possibly changing
+ * the store state. The actions may be sync or async. It returns a Promise that resolves when
+ * ALL actions finish.
+ *
+ * ```ts
+ * const dispatchAndWaitAll = useDispatchAndWaitAll();
+ * await dispatchAndWaitAll([new BuyAction('IBM'), new SellAction('TSLA')]);
+ * ```
+ *
+ * Note: While the state change from the action's reducers will have been applied when the
+ * Promise resolves, other independent processes that the action may have started may still
+ * be in progress.
+ *
+ * See also:
+ * - `dispatch` which dispatches both sync and async actions.
+ * - `dispatchAndWait` which dispatches both sync and async actions, and returns a Promise.
+ * - `dispatchSync` which dispatches sync actions, and throws if the action is async.
+ * - `dispatchAll` which dispatches all given actions in parallel.
+ */
+export function useDispatchAndWaitAll(): (action: ReduxAction<any>[]) => Promise<ReduxAction<any>[]> {
+  let store = _useStoreFromContext<any>();
+  return store.dispatchAndWaitAll.bind(store);
+}
+
+/**
+ * Dispatches all given actions in parallel, applying their reducer, and possibly changing
+ * the store state.
+ *
+ * ```ts
+ * const dispatchAll = useDispatchAll();
+ * dispatchAll([new BuyAction('IBM'), new SellAction('TSLA')]);
+ * ```
+ *
+ * See also:
+ * - `dispatch` which dispatches both sync and async actions.
+ * - `dispatchAndWait` which dispatches both sync and async actions, and returns a Promise.
+ * - `dispatchAndWaitAll` which dispatches all given actions, and returns a Promise.
+ * - `dispatchSync` which dispatches sync actions, and throws if the action is async.
+ */
+export function useDispatchAll(): (action: ReduxAction<any>[]) => ReduxAction<any>[] {
+  let store = _useStoreFromContext<any>();
+  return store.dispatchAll.bind(store);
 }
 
 /**
@@ -181,20 +242,47 @@ export function useDispatchAndWait(): (action: ReduxAction<any>) => Promise<Acti
  *
  * The only use for `dispatchSync` is when you need to guarantee (in runtime) that your
  * action is SYNC, which means the state gets changed right after the dispatch call.
+ *
+ * See also:
+ * - `dispatch` which dispatches both sync and async actions.
+ * - `dispatchAndWait` which dispatches both sync and async actions, and returns a Promise.
+ * - `dispatchAndWaitAll` which dispatches all given actions, and returns a Promise.
+ * - `dispatchAll` which dispatches all given actions in parallel.
  */
 export function useDispatchSync(): (action: ReduxAction<any>) => void {
   let store = _useStoreFromContext<any>();
   return store.dispatchSync.bind(store);
 }
 
+/**
+ * You can use `isWaiting` and pass it an action `type`:
+ * - It returns true if an ASYNC action of the specific type is currently being processed.
+ * - It returns false if an ASYNC action of the specific type is NOT currently being processed.
+ * - This is only useful for ASYNC actions, since it always returns `false` when the action is SYNC.
+ *
+ * Note an action is ASYNC if it returns a promise from its `before` OR its `reduce` methods.
+ *
+ * ```ts
+ * const isWaiting = useIsWaiting(MyAction);
+ * if (isWaiting) { // Show a spinner }
+ * ```
+ */
 export function useIsWaiting(type: { new(...args: any[]): ReduxAction<any> }): boolean {
   return _useStoreSelector<any, boolean>((store) => store.isWaiting(type));
 }
 
+/**
+ * Returns true if the given action `type` failed with an `UserException`.
+ * Note: This method uses the EXACT action type. Subtypes are not considered.
+ */
 export function useIsFailed(type: { new(...args: any[]): ReduxAction<any> }): boolean {
   return _useStoreSelector<any, boolean>((store) => store.isFailed(type));
 }
 
+/**
+ * Returns the `UserException` of the `type` that failed.
+ * Note: This method uses the EXACT type in `type`. Subtypes are not considered.
+ */
 export function useExceptionFor(type: { new(...args: any[]): ReduxAction<any> }): UserException | null {
   return _useStoreSelector<any, UserException | null>((store) => store.exceptionFor(type));
 }

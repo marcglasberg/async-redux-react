@@ -476,6 +476,12 @@ export class Store<St> {
 
   /**
    * Dispatches the action to the Redux store, to potentially change the state.
+   *
+   * See also:
+   * - `dispatchAll` which dispatches all given actions in parallel.
+   * - `dispatchSync` which dispatches sync actions, and throws if the action is async.
+   * - `dispatchAndWait` which dispatches both sync and async actions, and returns a Promise.
+   * - `dispatchAndWaitAll` which dispatches all given actions, and returns a Promise.
    */
   dispatch(action: ReduxAction<St>): void {
     let mockedActionOrAction = this._mockActionOrNot(action);
@@ -504,6 +510,12 @@ export class Store<St> {
    * progress.
    *
    * Usage: `await store.dispatchAndWait(new MyAction())`.
+   *
+   * See also:
+   * - `dispatch` which dispatches both sync and async actions.
+   * - `dispatchSync` which dispatches sync actions, and throws if the action is async.
+   * - `dispatchAll` which dispatches all given actions in parallel.
+   * - `dispatchAndWaitAll` which dispatches all given actions, and returns a Promise.
    */
   dispatchAndWait(action: ReduxAction<St>): Promise<ActionStatus> {
 
@@ -528,6 +540,66 @@ export class Store<St> {
   }
 
   /**
+   * Dispatches all given actions in parallel, applying their reducers, and possibly changing
+   * the store state. The actions may be sync or async. It returns a Promise that resolves when
+   * ALL actions finish.
+   *
+   * ```ts
+   * let actions = await store.dispatchAndWaitAll([new BuyAction('IBM'), new SellAction('TSLA')]);
+   * ```
+   *
+   * Note this is exactly the same as doing:
+   *
+   * ```ts
+   * let action1 = new BuyAction('IBM');
+   * let action2 = new SellAction('TSLA');
+   * store.dispatch(action1);
+   * store.dispatch(action2);
+   * await store.waitAllActions([action1, action2], true);
+   * let actions = [action1, action2];
+   * ```
+   *
+   * Note: While the state change from the action's reducers will have been applied when the
+   * Promise resolves, other independent processes that the action may have started may still
+   * be in progress.
+   *
+   * See also:
+   * - `dispatch` which dispatches both sync and async actions.
+   * - `dispatchAndWait` which dispatches both sync and async actions, and returns a Promise.
+   * - `dispatchSync` which dispatches sync actions, and throws if the action is async.
+   * - `dispatchAll` which dispatches all given actions in parallel.
+   */
+  async dispatchAndWaitAll(actions: ReduxAction<St>[]): Promise<ReduxAction<St>[]> {
+    let promises: Promise<ActionStatus> [] = [];
+    for (let action of actions) {
+      promises.push(this.dispatchAndWait(action));
+    }
+    await Promise.all(promises);
+    return actions;
+  }
+
+  /**
+   * Dispatches all given actions in parallel, applying their reducer, and possibly changing
+   * the store state. It returns the same list of actions, so that you can instantiate them
+   * inline, but still get a list of them.
+   *
+   * ```ts
+   * let actions = store.dispatchAll([new BuyAction('IBM'), new SellAction('TSLA')]);
+   * ```
+   *
+   * See also:
+   * - `dispatch` which dispatches both sync and async actions.
+   * - `dispatchAndWait` which dispatches both sync and async actions, and returns a Promise.
+   * - `dispatchAndWaitAll` which dispatches all given actions, and returns a Promise.
+   * - `dispatchSync` which dispatches sync actions, and throws if the action is async. */
+  dispatchAll(actions: ReduxAction<St>[]): ReduxAction<St>[] {
+    for (let action of actions) {
+      this.dispatch(action);
+    }
+    return actions;
+  }
+
+  /**
    * Dispatches the given action to the Redux store, to potentially change the state.
    *
    * This is exactly the same as the regular `dispatch`, except for the fact it
@@ -536,6 +608,12 @@ export class Store<St> {
    *
    * The only use for `dispatchSync` is when you need to guarantee (in runtime) that your
    * action is SYNC, which means the state gets changed right after the dispatch call.
+   *
+   * See also:
+   * - `dispatch` which dispatches both sync and async actions.
+   * - `dispatchAndWait` which dispatches both sync and async actions, and returns a Promise.
+   * - `dispatchAndWaitAll` which dispatches all given actions, and returns a Promise.
+   * - `dispatchAll` which dispatches all given actions in parallel.
    */
   dispatchSync(action: ReduxAction<St>): void {
     let mockedActionOrAction = this._mockActionOrNot(action);
