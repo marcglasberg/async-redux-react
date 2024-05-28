@@ -1,4 +1,4 @@
-import { TodoItem } from './Todos';
+import { TodoItem } from './TodoList';
 import { Action } from '../infra/Action';
 
 export class RemoveTodoAction extends Action {
@@ -8,7 +8,7 @@ export class RemoveTodoAction extends Action {
   }
 
   reduce() {
-    let newTodos = this.state.todos.removeTodo(this.item);
+    let newTodos = this.state.todoList.removeTodo(this.item);
     return this.state.withTodos(newTodos);
   }
 }

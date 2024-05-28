@@ -14,7 +14,7 @@ import { State } from '../business/State';
 import { AddTodoAction } from '../business/AddTodoAction';
 import { ToggleTodoAction } from '../business/ToggleTodoAction';
 import { RemoveCompletedTodosAction } from '../business/RemoveCompletedTodosAction';
-import { TodoItem } from '../business/Todos';
+import { TodoItem } from '../business/TodoList';
 import { NextFilterAction } from '../business/NextFilterAction';
 import { Filter } from '../business/Filter';
 import { AddRandomTodoAction } from '../business/AddRandomTodoAction';
@@ -23,7 +23,7 @@ import './AppStyles.css';
 export const AppContent: React.FC = () => {
   return (
     <div className='appContentStyle'>
-      <h1 className='h1Style'>Todos</h1>
+      <h1 className='h1Style'>Todo List</h1>
       <TodoInput/>
       <TodoList/>
       <div className='bottomFixedDiv'>
@@ -82,10 +82,10 @@ const NoTodosWarning: React.FC = () => {
 
   // Using `useSelect()` is better, because the component will
   // only rebuild when the selected part of the state changes.
-  const todos = useSelect((state: State) => state.todos);
-  let count = todos.count(filter);
-  let countCompleted = todos.count(Filter.showCompleted);
-  let countActive = todos.count(Filter.showActive);
+  const todoList = useSelect((state: State) => state.todoList);
+  let count = todoList.count(filter);
+  let countCompleted = todoList.count(Filter.showCompleted);
+  let countActive = todoList.count(Filter.showActive);
 
   if (count === 0) {
     let warningText = '';
@@ -122,8 +122,8 @@ const TodoList: React.FC = () => {
 
   const store = useStore();
   const filter = useSelect((state: State) => state.filter);
-  const count = useSelect((state: State) => state.todos.count(filter));
-  let items: TodoItem[] = useSelect((state: State) => state.todos.items);
+  const count = useSelect((state: State) => state.todoList.count(filter));
+  let items: TodoItem[] = useSelect((state: State) => state.todoList.items);
 
   // No todos to show with the current filter.
   if (count === 0) return <NoTodosWarning/>;

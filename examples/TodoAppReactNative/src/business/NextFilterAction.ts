@@ -1,5 +1,5 @@
-import { Action } from '../infra/Action.ts';
-import { Filter } from './Filter.ts';
+import { Action } from '../infra/Action';
+import { Filter } from './Filter';
 
 export class NextFilterAction extends Action {
 

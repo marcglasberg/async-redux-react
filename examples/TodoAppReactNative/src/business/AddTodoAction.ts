@@ -1,6 +1,6 @@
-import {Action} from '../infra/Action.ts';
+import {Action} from '../infra/Action';
 import {UserException} from 'async-redux-react';
-import {Filter} from './Filter.ts';
+import {Filter} from './Filter';
 
 export class AddTodoAction extends Action {
 
@@ -10,14 +10,14 @@ export class AddTodoAction extends Action {
 
   reduce() {
 
-    if (this.state.todos.ifExists(this.text)) {
+    if (this.state.todoList.ifExists(this.text)) {
       throw new UserException(
         `The item "${this.text}" already exists.`, {
           errorText: 'Type something else'
         }).withDialog(true);
     }
 
-    let newTodos = this.state.todos.addTodoFromText(this.text);
+    let newTodos = this.state.todoList.addTodoFromText(this.text);
 
     return this.state
       .withTodos(newTodos)

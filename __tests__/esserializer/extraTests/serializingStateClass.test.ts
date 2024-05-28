@@ -8,19 +8,19 @@ test('State class', () => {
   let todo1 = new TodoItem('First', false);
   let todo2 = new TodoItem('Second', false);
   let todo3 = new TodoItem('Third', true);
-  let todos = new Todos([todo1, todo2, todo3]);
+  let todoList = new TodoList([todo1, todo2, todo3]);
   let filter = Filter.showActive;
 
-  let state = new State({todos, filter});
+  let state = new State({todoList: todoList, filter});
 
-  ESSerializer.registerClasses([State, Todos, TodoItem, Filter]);
+  ESSerializer.registerClasses([State, TodoList, TodoItem, Filter]);
 
   let serialized = ESSerializer.serialize(state);
   let deserialized = ESSerializer.deserialize(serialized);
 
   expect(serialized).toBe('' +
     '{' +
-    '"todos":' +
+    '"todoList":' +
     /*  */'{' +
     /*  */'"items":' +
     /*      */'[' +
@@ -28,7 +28,7 @@ test('State class', () => {
     /*      */'{"text":"Second","completed":false,"*type":"TodoItem"},' +
     /*      */'{"text":"Third","completed":true,"*type":"TodoItem"}' +
     /*      */'],' +
-    /*  */'"*type":"Todos"' +
+    /*  */'"*type":"TodoList"' +
     /*  */'},' +
     '"filter":"Showing ACTIVE",' +
     '"*type":"State"' +
@@ -41,13 +41,13 @@ test('State class', () => {
   expect(stateDeserialized.toString())
     .toBe('' +
       'State{' +
-      'todos=Todos{TodoItem{text=First, completed=false},TodoItem{text=Second, completed=false},TodoItem{text=Third, completed=true}}, ' +
+      'todoList=TodoList{TodoItem{text=First, completed=false},TodoItem{text=Second, completed=false},TodoItem{text=Third, completed=true}}, ' +
       'filter=Showing ACTIVE' +
       '}');
 
   expect(stateDeserialized.hasTodos()).toBeTruthy();
 
-  let deserializedTodos = stateDeserialized.todos;
+  let deserializedTodos = stateDeserialized.todoList;
 
   expect(deserializedTodos.isEmpty()).toBeFalsy();
   expect(deserializedTodos.ifExists('xxx')).toBeFalsy();
@@ -82,18 +82,18 @@ class TodoItem {
   }
 }
 
-class Todos {
+class TodoList {
 
   // The list of items.
   readonly items: TodoItem[];
 
-  static empty: Todos = new Todos();
+  static empty: TodoList = new TodoList();
 
   constructor(items?: TodoItem[]) {
     this.items = items ?? [];
   }
 
-  addTodoFromText(text: string): Todos {
+  addTodoFromText(text: string): TodoList {
     const trimmedText = text.trim();
     const capitalizedText = trimmedText.charAt(0).toUpperCase() + trimmedText.slice(1);
     return this.addTodo(new TodoItem(capitalizedText));
@@ -102,11 +102,11 @@ class Todos {
   // If the item already exists, don't add it again.
   // Otherwise, add it to the top of the list.
   // If the text of the item is empty, don't add it.
-  addTodo(newItem: TodoItem): Todos {
+  addTodo(newItem: TodoItem): TodoList {
     if ((newItem.text === '') || this.ifExists(newItem.text))
       return this;
     else
-      return new Todos([newItem, ...this.items]);
+      return new TodoList([newItem, ...this.items]);
   }
 
   // Returns true if the given text is already in the list.
@@ -115,16 +115,16 @@ class Todos {
   }
 
   // Remove the given item from the list.
-  removeTodo(item: TodoItem): Todos {
-    return new Todos(this.items.filter(todo => todo !== item));
+  removeTodo(item: TodoItem): TodoList {
+    return new TodoList(this.items.filter(todo => todo !== item));
   }
 
   // Toggle the completed status of the given item.
-  toggleTodo(item: TodoItem): Todos {
+  toggleTodo(item: TodoItem): TodoList {
     const newTodos = this.items.map(itemInList =>
       (itemInList === item) ? item.toggleCompleted() : itemInList
     );
-    return new Todos(newTodos);
+    return new TodoList(newTodos);
   }
 
   // Count the number of todos that appear when the given filter is applied.
@@ -146,7 +146,7 @@ class Todos {
   }
 
   toString() {
-    return `Todos{${this.items.join(',')}}`;
+    return `TodoList{${this.items.join(',')}}`;
   }
 }
 
@@ -158,19 +158,19 @@ enum Filter {
 
 class State {
 
-  readonly todos: Todos;
+  readonly todoList: TodoList;
   readonly filter: Filter;
 
   static initialState: State =
-    new State({todos: Todos.empty, filter: Filter.showAll});
+    new State({todoList: TodoList.empty, filter: Filter.showAll});
 
-  constructor({todos, filter}: { todos: Todos, filter: Filter }) {
-    this.todos = todos;
+  constructor({todoList, filter}: { todoList: TodoList, filter: Filter }) {
+    this.todoList = todoList;
     this.filter = filter;
   }
 
-  withTodos(todos: Todos): State {
-    return new State({todos: todos || this.todos, filter: this.filter});
+  withTodos(todoList: TodoList): State {
+    return new State({todoList: todoList || this.todoList, filter: this.filter});
   }
 
   /**
@@ -190,16 +190,16 @@ class State {
    */
   withFilter(filter1: Filter, filter2?: Filter): State {
     if ((this.filter != filter1) && (this.filter != filter2))
-      return new State({todos: this.todos, filter: filter1});
+      return new State({todoList: this.todoList, filter: filter1});
     else return this;
   }
 
   hasTodos(): boolean {
-    return !this.todos.isEmpty();
+    return !this.todoList.isEmpty();
   }
 
   toString() {
-    return `State{todos=${this.todos}, filter=${this.filter}}`;
+    return `State{todoList=${this.todoList}, filter=${this.filter}}`;
   }
 }
 

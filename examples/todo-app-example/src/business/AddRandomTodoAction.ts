@@ -20,7 +20,7 @@ export class AddRandomTodoAction extends Action {
     let text = await this.getTextFromTheNumbersAPI();
 
     return (state: State) => state
-      .withTodos(this.state.todos.addTodoFromText(text))
+      .withTodos(this.state.todoList.addTodoFromText(text))
       .withFilter(Filter.showActive, Filter.showAll);
   }
 
@@ -42,8 +42,8 @@ export class AddRandomTodoAction extends Action {
       if (text === '') throw new UserException('Failed to get text from the NumbersAPI.');
 
     }
-      // Repeat the process if the item already exists in the todos (unlikely, but possible).
-    while (this.state.todos.ifExists(text));
+      // Repeat the process if the item already exists in the todo list (unlikely, but possible).
+    while (this.state.todoList.ifExists(text));
 
     return text;
   }

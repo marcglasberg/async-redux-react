@@ -3,14 +3,14 @@
 
 import { ESSerializer } from '../../../src/Esserializer';
 
-test('Todos class', () => {
+test('TodoList class', () => {
 
   let todo1 = new TodoItem('First', false);
   let todo2 = new TodoItem('Second', false);
   let todo3 = new TodoItem('Third', true);
-  let todos = new Todos([todo1, todo2, todo3]);
+  let todos = new TodoList([todo1, todo2, todo3]);
 
-  ESSerializer.registerClasses([Todos, TodoItem]);
+  ESSerializer.registerClasses([TodoList, TodoItem]);
 
   let serialized = ESSerializer.serialize(todos);
   let deserialized = ESSerializer.deserialize(serialized);
@@ -20,12 +20,12 @@ test('Todos class', () => {
     '{"text":"First","completed":false,"*type":"TodoItem"},' +
     '{"text":"Second","completed":false,"*type":"TodoItem"},' +
     '{"text":"Third","completed":true,"*type":"TodoItem"}],' +
-    '"*type":"Todos"' +
+    '"*type":"TodoList"' +
     '}');
 
-  expect(deserialized instanceof Todos).toBeTruthy();
+  expect(deserialized instanceof TodoList).toBeTruthy();
 
-  let todosDeserialized = deserialized as Todos;
+  let todosDeserialized = deserialized as TodoList;
 
   expect(Array.isArray(todosDeserialized.items)).toBeTruthy();
 
@@ -68,18 +68,18 @@ class TodoItem {
   }
 }
 
-class Todos {
+class TodoList {
 
   // The list of items.
   readonly items: TodoItem[];
 
-  static empty: Todos = new Todos();
+  static empty: TodoList = new TodoList();
 
   constructor(items?: TodoItem[]) {
     this.items = items ?? [];
   }
 
-  addTodoFromText(text: string): Todos {
+  addTodoFromText(text: string): TodoList {
     const trimmedText = text.trim();
     const capitalizedText = trimmedText.charAt(0).toUpperCase() + trimmedText.slice(1);
     return this.addTodo(new TodoItem(capitalizedText));
@@ -88,11 +88,11 @@ class Todos {
   // If the item already exists, don't add it again.
   // Otherwise, add it to the top of the list.
   // If the text of the item is empty, don't add it.
-  addTodo(newItem: TodoItem): Todos {
+  addTodo(newItem: TodoItem): TodoList {
     if ((newItem.text === '') || this.ifExists(newItem.text))
       return this;
     else
-      return new Todos([newItem, ...this.items]);
+      return new TodoList([newItem, ...this.items]);
   }
 
   // Returns true if the given text is already in the list.
@@ -101,16 +101,16 @@ class Todos {
   }
 
   // Remove the given item from the list.
-  removeTodo(item: TodoItem): Todos {
-    return new Todos(this.items.filter(todo => todo !== item));
+  removeTodo(item: TodoItem): TodoList {
+    return new TodoList(this.items.filter(todo => todo !== item));
   }
 
   // Toggle the completed status of the given item.
-  toggleTodo(item: TodoItem): Todos {
+  toggleTodo(item: TodoItem): TodoList {
     const newTodos = this.items.map(itemInList =>
       (itemInList === item) ? item.toggleCompleted() : itemInList
     );
-    return new Todos(newTodos);
+    return new TodoList(newTodos);
   }
 
   // Count the number of todos that appear when the given filter is applied.
@@ -132,7 +132,7 @@ class Todos {
   }
 
   toString() {
-    return `Todos{${this.items.join(',')}}`;
+    return `TodoList{${this.items.join(',')}}`;
   }
 }
 

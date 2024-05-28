@@ -16,7 +16,7 @@ export class RemoveCompletedTodosAction extends Action {
   async reduce() {
 
     // If there are no completed items, do nothing.
-    if (this.state.todos.isEmpty(Filter.showCompleted)) return null;
+    if (this.state.todoList.isEmpty(Filter.showCompleted)) return null;
 
     else {
 
@@ -29,12 +29,12 @@ export class RemoveCompletedTodosAction extends Action {
       }
 
       // For each completed item, wait for 100 milliseconds and remove it, one by one.
-      for (let todo of this.state.todos) {
+      for (let todo of this.state.todoList) {
         if (todo.completed) {
           this.dispatch(new RemoveTodoAction(todo));
 
           // If there are still completed items to delete, wait for 250 milliseconds.
-          if (!(this.state.todos.isEmpty(Filter.showCompleted)))
+          if (!(this.state.todoList.isEmpty(Filter.showCompleted)))
             await delayMillis(100);
         }
       }

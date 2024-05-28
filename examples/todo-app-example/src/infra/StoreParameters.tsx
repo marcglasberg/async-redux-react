@@ -1,7 +1,7 @@
 import { ClassPersistor, ShowUserException, UserException, } from 'async-redux-react';
 import { Button, Dialog, DialogActions, DialogContent } from '@mui/material';
 import { State } from '../business/State';
-import { TodoItem, Todos } from '../business/Todos';
+import { TodoItem, TodoList } from '../business/TodoList';
 import { Filter } from '../business/Filter';
 import { createRoot } from "react-dom/client";
 
@@ -14,7 +14,7 @@ export const persistor = new ClassPersistor<State>(
   async () => window.localStorage.getItem('state'),
   async (serialized: string) => window.localStorage.setItem('state', serialized),
   async () => window.localStorage.clear(),
-  [State, Todos, TodoItem, Filter]
+  [State, TodoList, TodoItem, Filter]
 );
 
 /**

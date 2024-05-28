@@ -1,9 +1,9 @@
 import React from 'react';
 import { Store, StoreProvider } from 'async-redux-react';
-import { State } from '../business/State.ts';
+import { State } from '../business/State';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { AppContent } from '../ui/AppContent.tsx';
-import { persistor, userExceptionDialog } from './StoreParameters.tsx';
+import { AppContent } from '../ui/AppContent';
+import { persistor, userExceptionDialog } from './StoreParameters';
 
 const store = new Store<State>({
   initialState: State.initialState,

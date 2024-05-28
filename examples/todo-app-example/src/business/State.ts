@@ -1,21 +1,21 @@
-import { Todos } from './Todos';
+import { TodoList } from './TodoList';
 import { Filter } from './Filter';
 
 export class State {
 
-  readonly todos: Todos;
+  readonly todoList: TodoList;
   readonly filter: Filter;
 
   static initialState: State =
-    new State({todos: Todos.empty, filter: Filter.showAll});
+    new State({todoList: TodoList.empty, filter: Filter.showAll});
 
-  constructor({todos, filter}: { todos: Todos, filter: Filter }) {
-    this.todos = todos;
+  constructor({todoList, filter}: { todoList: TodoList, filter: Filter }) {
+    this.todoList = todoList;
     this.filter = filter;
   }
 
-  withTodos(todos: Todos): State {
-    return new State({todos: todos || this.todos, filter: this.filter});
+  withTodos(todoList: TodoList): State {
+    return new State({todoList: todoList || this.todoList, filter: this.filter});
   }
 
   /**
@@ -35,15 +35,15 @@ export class State {
    */
   withFilter(filter1: Filter, filter2?: Filter): State {
     if ((this.filter !== filter1) && (this.filter !== filter2))
-      return new State({todos: this.todos, filter: filter1});
+      return new State({todoList: this.todoList, filter: filter1});
     else return this;
   }
 
   hasTodos(): boolean {
-    return !this.todos.isEmpty();
+    return !this.todoList.isEmpty();
   }
 
   toString() {
-    return `State{todos=${this.todos}, filter=${this.filter}}`;
+    return `State{todoList=${this.todoList}, filter=${this.filter}}`;
   }
 }

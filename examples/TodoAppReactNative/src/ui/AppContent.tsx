@@ -19,24 +19,24 @@ import {
   View
 } from 'react-native';
 import BouncyCheckbox from 'react-native-bouncy-checkbox';
-import { AddTodoAction } from '../business/AddTodoAction.ts';
-import { ToggleTodoAction } from '../business/ToggleTodoAction.ts';
-import { RemoveCompletedTodosAction } from '../business/RemoveCompletedTodosAction.ts';
-import { TodoItem } from '../business/Todos.ts';
-import { NextFilterAction } from '../business/NextFilterAction.ts';
-import { Filter } from '../business/Filter.ts';
-import { AddRandomTodoAction } from '../business/AddRandomTodoAction.ts';
-import { State } from '../business/State.ts';
+import { AddTodoAction } from '../business/AddTodoAction';
+import { ToggleTodoAction } from '../business/ToggleTodoAction';
+import { RemoveCompletedTodosAction } from '../business/RemoveCompletedTodosAction';
+import { TodoItem } from '../business/TodoList';
+import { NextFilterAction } from '../business/NextFilterAction';
+import { Filter } from '../business/Filter';
+import { AddRandomTodoAction } from '../business/AddRandomTodoAction';
+import { State } from '../business/State';
 
 export const AppContent: React.FC = () => {
   return (
-    <View style={{ flex: 1 }}>
-      <Text style={{ textAlign: 'center', padding: 16, fontSize: 35, color: '#A44' }}>Todos</Text>
-      <TodoInput />
-      <TodoList />
-      <FilterButton />
-      <AddRandomTodoButton />
-      <RemoveAllButton />
+    <View style={{flex: 1}}>
+      <Text style={{textAlign: 'center', padding: 16, fontSize: 35, color: '#A44'}}>Todo List</Text>
+      <TodoInput/>
+      <TodoList/>
+      <FilterButton/>
+      <AddRandomTodoButton/>
+      <RemoveAllButton/>
     </View>
   );
 };
@@ -81,7 +81,6 @@ const TodoInput: React.FC = () => {
   );
 };
 
-
 const NoTodosWarning: React.FC = () => {
 
   // Getting the whole store state with `useAllState()` works,
@@ -90,21 +89,21 @@ const NoTodosWarning: React.FC = () => {
 
   // Using `useSelect()` is better, because the component will
   // only rebuild when the selected part of the state changes.
-  const todos = useSelect((state: State) => state.todos);
-  let count = todos.count(filter);
-  let countCompleted = todos.count(Filter.showCompleted);
-  let countActive = todos.count(Filter.showActive);
+  const todoList = useSelect((state: State) => state.todoList);
+  let count = todoList.count(filter);
+  let countCompleted = todoList.count(Filter.showCompleted);
+  let countActive = todoList.count(Filter.showActive);
 
   if (count === 0) {
     if (filter === Filter.showAll)
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
           <Text style={styles.dimmedText}>No todos</Text>
         </View>
       );
     else if (filter === Filter.showActive) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
           {countCompleted !== 0 ? (
             <>
               <Text style={styles.dimmedText}>No active todos</Text>
@@ -118,7 +117,7 @@ const NoTodosWarning: React.FC = () => {
       );
     } else if (filter === Filter.showCompleted) {
       return (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
           {countActive !== 0 ? (
             <>
               <Text style={styles.dimmedText}>No completed todos</Text>
@@ -132,18 +131,18 @@ const NoTodosWarning: React.FC = () => {
     } else throw new Error('Invalid filter: ' + filter);
   }
   //
-  else return <View />;
+  else return <View/>;
 };
 
 const TodoList: React.FC = () => {
 
   const store = useStore();
   const filter = useSelect((state: State) => state.filter);
-  const count = useSelect((state: State) => state.todos.count(filter));
-  let items: TodoItem[] = useSelect((state: State) => state.todos.items);
+  const count = useSelect((state: State) => state.todoList.count(filter));
+  let items: TodoItem[] = useSelect((state: State) => state.todoList.items);
 
   // No todos to show with the current filter.
-  if (count === 0) return <NoTodosWarning />;
+  if (count === 0) return <NoTodosWarning/>;
     //
   // Show the list of todoItems.
   else {
@@ -160,7 +159,7 @@ const TodoList: React.FC = () => {
     };
 
     return (
-      <View style={{ flex: 1 }}>
+      <View style={{flex: 1}}>
 
         <ScrollView>
           {items.filter(filterTodos).map((item, index) => (
@@ -173,7 +172,7 @@ const TodoList: React.FC = () => {
               fillColor="#555"
               unfillColor="#FFE"
               text={item.text}
-              innerIconStyle={{ borderWidth: 2 }}
+              innerIconStyle={{borderWidth: 2}}
               onPress={(_) => {
                 store.dispatch(new ToggleTodoAction(item));
               }}
@@ -181,7 +180,7 @@ const TodoList: React.FC = () => {
           ))}
         </ScrollView>
         <View
-          style={{ backgroundColor: '#CCC', height: 0.75, marginTop: 10, marginHorizontal: 15 }
+          style={{backgroundColor: '#CCC', height: 0.75, marginTop: 10, marginHorizontal: 15}
           }
         />
       </View>
@@ -221,7 +220,7 @@ const RemoveAllButton: React.FC = () => {
     >
 
       {isDisabled ? (
-        <ActivityIndicator size="small" color="#ffffff" />
+        <ActivityIndicator size="small" color="#ffffff"/>
       ) : (
         <Text style={styles.footerButtonText}>Remove Completed Todos</Text>
       )}
@@ -236,17 +235,15 @@ const AddRandomTodoButton: React.FC = () => {
 
   return (
     <TouchableOpacity
-      onPress={() => {
-        store.dispatch(new AddRandomTodoAction());
-      }}
+      onPress={() => store.dispatch(new AddRandomTodoAction()) }
       style={styles.footerButton}
     >
 
-      {isLoading ? (
-        <ActivityIndicator size="small" color="#ffffff" />
-      ) : (
+      {isLoading ?
+        <ActivityIndicator size="small" color="#ffffff"/>
+        :
         <Text style={styles.footerButtonText}>Add Random Todo</Text>
-      )}
+      }
 
     </TouchableOpacity>
   );

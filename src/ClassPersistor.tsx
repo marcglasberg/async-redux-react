@@ -17,7 +17,7 @@ import { Persistor } from './Persistor';
  *     async () => window.localStorage.getItem('state'),
  *     async (serialized) => window.localStorage.setItem('state', serialized),
  *     async () => window.localStorage.clear(),
- *     [State, Todos, TodoItem, Filter] // All state classes the app uses.
+ *     [State, TodoList, TodoItem, Filter] // All state classes the app uses.
  *   );
  * ```
  *
@@ -27,7 +27,7 @@ import { Persistor } from './Persistor';
  *     async () => AsyncStorage.getItem('state'),
  *     async (serialized) => AsyncStorage.setItem('state', serialized),
  *     async () => AsyncStorage.clear(),
- *     [State, Todos, TodoItem, Filter] // All state classes the app uses.
+ *     [State, TodoList, TodoItem, Filter] // All state classes the app uses.
  *   );
  * ```
  */
@@ -59,9 +59,10 @@ export class ClassPersistor<St> extends Persistor<St> {
     /**
      * You HAVE to list here all the custom classes that are part of your state, directly or
      * indirectly. Note: You don't need to list native JavaScript classes, like Date.
-     * For example, suppose you have a class `State` that has a property `todos` of type `Todos`.
-     * And the class `Todos` has a property `items` of type `Array<TodoItem>`.
-     * Then you have to list all three classes here: `[State, Todos, TodoItem]`.
+     * For example, suppose you have a class `State` that has a property `todoList` of
+     * type `TodoList`.
+     * And the class `TodoList` has a property `items` of type `Array<TodoItem>`.
+     * Then you have to list all three classes here: `[State, TodoList, TodoItem]`.
      */
     public classesToSerialize: Array<ClassOrEnum>
   ) {

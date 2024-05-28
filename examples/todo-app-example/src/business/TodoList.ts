@@ -28,18 +28,13 @@ export class TodoItem {
   }
 }
 
-export class Todos {
+export class TodoList {
 
-  // The list of items.
-  readonly items: TodoItem[];
+  static empty: TodoList = new TodoList();
 
-  static empty: Todos = new Todos();
+  constructor(public readonly items: TodoItem[] = []) {}
 
-  constructor(items?: TodoItem[]) {
-    this.items = items ?? [];
-  }
-
-  addTodoFromText(text: string): Todos {
+  addTodoFromText(text: string): TodoList {
     const trimmedText = text.trim();
     const capitalizedText = trimmedText.charAt(0).toUpperCase() + trimmedText.slice(1);
     return this.addTodo(new TodoItem(capitalizedText));
@@ -48,11 +43,11 @@ export class Todos {
   // If the item already exists, don't add it again.
   // Otherwise, add it to the top of the list.
   // If the text of the item is empty, don't add it.
-  addTodo(newItem: TodoItem): Todos {
+  addTodo(newItem: TodoItem): TodoList {
     if ((newItem.text === '') || this.ifExists(newItem.text))
       return this;
     else
-      return new Todos([newItem, ...this.items]);
+      return new TodoList([newItem, ...this.items]);
   }
 
   // Returns true if the given text is already in the list.
@@ -61,16 +56,16 @@ export class Todos {
   }
 
   // Remove the given item from the list.
-  removeTodo(item: TodoItem): Todos {
-    return new Todos(this.items.filter(todo => todo !== item));
+  removeTodo(item: TodoItem): TodoList {
+    return new TodoList(this.items.filter(todo => todo !== item));
   }
 
   // Toggle the completed status of the given item.
-  toggleTodo(item: TodoItem): Todos {
+  toggleTodo(item: TodoItem): TodoList {
     const newTodos = this.items.map(itemInList =>
       (itemInList === item) ? item.toggleCompleted() : itemInList
     );
-    return new Todos(newTodos);
+    return new TodoList(newTodos);
   }
 
   // Count the number of todos that appear when the given filter is applied.
@@ -92,8 +87,6 @@ export class Todos {
   }
 
   toString() {
-    return `Todos{${this.items.join(',')}}`;
+    return `TodoList{${this.items.join(',')}}`;
   }
-
-
 }
