@@ -84,7 +84,7 @@ export abstract class ReduxAction<St> {
    * then instead of throwing this error you could do:
    *
    * ```
-   * wrapError(error) { return new UserException("Please enter a valid input.", {cause: error}) }
+   * wrapError(error) { return new UserException("Please enter a valid input.", {hardCause: error}) }
    * ```
    *
    * If you want to disable the error you can return `null`. For example, if you want
@@ -110,6 +110,60 @@ export abstract class ReduxAction<St> {
   private _resolve: ((value: ActionStatus) => void) | null = null;
   private _status = new ActionStatus();
   private _initialState: St | null = null;
+  private _log: { key: string, value: any }[] = [];
+
+  /**
+   * Adds a key/value pair to the action log.
+   *
+   * ```ts
+   * class LoadUser extends Action {
+   *
+   *   async reduce() {
+   *     let user = await loadUser();
+   *     this.log('User', user.id); // Here!
+   *
+   *     return (state) => state.copy(user: user);
+   *   }
+   * }
+   * ```
+   */
+  log(key: string, value: any) {
+    this._log.push({key, value});
+  }
+
+  /**
+   * Gets the action log.
+   *
+   * ```ts
+   * function stateObserver(action, prevState, newState, error, dispatchCount) {
+   *   let log = action.getLog(); // Here!
+   *   saveMetrics(action, log, newState, error);
+   * }
+   * ```
+   */
+  get getLog() {
+    return this._log;
+  }
+
+  /**
+   * Returns the "status" of the action, used to keep track of the action's lifecycle. If you have
+   * a reference to the action you can check its status at any time with `action.status`:
+   *
+   * ```ts
+   * let action = new MyAction();
+   * await store.dispatchAndWait(new MyAction());
+   * if (action.isFinishedWithNoErrors) { ... }
+   * ```
+   * However, dispatchAndWait also returns the action status after it finishes:
+   *
+   * ```ts
+   * let status = await store.dispatchAndWait(new MyAction());
+   * if (status.isFinishedWithNoErrors) { ... }
+   * ```
+   */
+  get status() {
+    return this._status;
+  }
 
   /**
    * Dispatches an action to the Redux store.
@@ -218,26 +272,6 @@ export abstract class ReduxAction<St> {
   }
 
   /**
-   * Returns the "status" of the action, used to keep track of the action's lifecycle. If you have
-   * a reference to the action you can check its status at any time with `action.status`:
-   *
-   * ```ts
-   * const action = new MyAction();
-   * await store.dispatchAndWait(new MyAction());
-   * if (action.isFinishedWithNoErrors) { ... }
-   * ```
-   * However, dispatchAndWait also returns the action status after it finishes:
-   *
-   * ```ts
-   * const status = await store.dispatchAndWait(new MyAction());
-   * if (status.isFinishedWithNoErrors) { ... }
-   * ```
-   */
-  get status() {
-    return this._status;
-  }
-
-  /**
    * If method `abortDispatch()` returns true, the action will not be dispatched: `before`,
    * `reduce` and `after` will not be called. This is an advanced feature only useful under rare
    * circumstances, and you should only use it if you know what you are doing.
@@ -302,7 +336,9 @@ export abstract class ReduxAction<St> {
    * Returns the `UserException` of the `type` that failed.
    * Note: This method uses the EXACT type in `type`. Subtypes are not considered.
    */
-  exceptionFor<T extends ReduxAction<St>>(type: { new(...args: any[]): T }): (UserException | null) {
+  exceptionFor<T extends ReduxAction<St>>(type: {
+    new(...args: any[]): T
+  }): (UserException | null) {
     return this.store.exceptionFor(type);
   }
 
@@ -367,9 +403,7 @@ export abstract class ReduxAction<St> {
    * }
    * ```
    *
-   * If you want to retry unlimited times, make maxRetries equal to: `-1`:
-   * Note: If you `await dispatchAndWait(action)` and the action uses unlimited retries,
-   * it may never finish if it keeps failing. So, be careful when using it.
+   * If you want to retry unlimited times, make `maxRetries` equal to: `-1`:
    *
    * ```ts
    * class MyAction extends ReduxAction<State> {
@@ -378,6 +412,9 @@ export abstract class ReduxAction<St> {
    * ```
    *
    * Notes:
+   *
+   * - If you `await dispatchAndWait(action)` and the action uses unlimited retries,
+   *   it may never finish if it keeps failing. So, be careful when using it.
    *
    * - If the `before` method throws an error, the retry will NOT happen.
    *
@@ -399,6 +436,8 @@ export abstract class ReduxAction<St> {
    *
    * - Keep in mind that all actions using the `retry` mixin will become asynchronous, even
    *   if the original action was synchronous.
+   *
+   * - If necessary, you can know the current "attempt number" by using `this.attempts`.
    */
   retry?: Retry;
 
@@ -446,8 +485,8 @@ export abstract class ReduxAction<St> {
    * expect(store.state.name, 'Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions([]);
    * expect(state.stocks, ['IBM', 'TSLA']);
    *
@@ -482,7 +521,7 @@ export abstract class ReduxAction<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name, 'Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -501,7 +540,7 @@ export abstract class ReduxAction<St> {
   waitCondition(
     condition: (state: St) => boolean,
     timeoutMillis: number | null = null
-  ): Promise<St> {
+  ): Promise<ReduxAction<St> | null> {
     return this.store.waitCondition(condition, timeoutMillis);
   }
 
@@ -544,17 +583,17 @@ export abstract class ReduxAction<St> {
    * expect(store.state.name).toBe('Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions();
-   * expect(state.stocks).toBe(['IBM', 'TSLA']);
+   * expect(state.stocks).toEqual(['IBM', 'TSLA']);
    *
    * // Dispatches two actions in PARALLEL and wait for their TYPES:
-   * expect(store.state.portfolio).toBe(['TSLA']);
+   * expect(store.state.portfolio).toEqual(['TSLA']);
    * dispatch(new BuyAction('IBM'));
    * dispatch(new SellAction('TSLA'));
    * await store.waitAllActionTypes([BuyAction, SellAction]);
-   * expect(store.state.portfolio).toBe(['IBM']);
+   * expect(store.state.portfolio).toEqual(['IBM']);
    *
    * // Dispatches actions in PARALLEL and wait until no actions are in progress.
    * dispatch(new BuyAction('IBM'));
@@ -582,7 +621,7 @@ export abstract class ReduxAction<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = await store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name).toBe('Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -662,17 +701,17 @@ export abstract class ReduxAction<St> {
    * expect(store.state.name).toBe('Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions();
-   * expect(state.stocks).toBe(['IBM', 'TSLA']);
+   * expect(state.stocks).toEqual(['IBM', 'TSLA']);
    *
    * // Dispatches two actions in PARALLEL and wait for their TYPES:
-   * expect(store.state.portfolio).toBe(['TSLA']);
+   * expect(store.state.portfolio).toEqual(['TSLA']);
    * dispatch(new BuyAction('IBM'));
    * dispatch(new SellAction('TSLA'));
    * await store.waitAllActionTypes([BuyAction, SellAction]);
-   * expect(store.state.portfolio).toBe(['IBM']);
+   * expect(store.state.portfolio).toEqual(['IBM']);
    *
    * // Dispatches actions in PARALLEL and wait until no actions are in progress.
    * dispatch(new BuyAction('IBM'));
@@ -700,7 +739,7 @@ export abstract class ReduxAction<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = await store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name).toBe('Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -770,17 +809,17 @@ export abstract class ReduxAction<St> {
    * expect(store.state.name).toBe('Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions();
-   * expect(state.stocks).toBe(['IBM', 'TSLA']);
+   * expect(state.stocks).toEqual(['IBM', 'TSLA']);
    *
    * // Dispatches two actions in PARALLEL and wait for their TYPES:
-   * expect(store.state.portfolio).toBe(['TSLA']);
+   * expect(store.state.portfolio).toEqual(['TSLA']);
    * dispatch(new BuyAction('IBM'));
    * dispatch(new SellAction('TSLA'));
    * await store.waitAllActionTypes([BuyAction, SellAction]);
-   * expect(store.state.portfolio).toBe(['IBM']);
+   * expect(store.state.portfolio).toEqual(['IBM']);
    *
    * // Dispatches actions in PARALLEL and wait until no actions are in progress.
    * dispatch(new BuyAction('IBM'));
@@ -808,7 +847,7 @@ export abstract class ReduxAction<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = await store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name).toBe('Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -871,17 +910,17 @@ export abstract class ReduxAction<St> {
    * expect(store.state.name).toBe('Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions();
-   * expect(state.stocks).toBe(['IBM', 'TSLA']);
+   * expect(state.stocks).toEqual(['IBM', 'TSLA']);
    *
    * // Dispatches two actions in PARALLEL and wait for their TYPES:
-   * expect(store.state.portfolio).toBe(['TSLA']);
+   * expect(store.state.portfolio).toEqual(['TSLA']);
    * dispatch(new BuyAction('IBM'));
    * dispatch(new SellAction('TSLA'));
    * await store.waitAllActionTypes([BuyAction, SellAction]);
-   * expect(store.state.portfolio).toBe(['IBM']);
+   * expect(store.state.portfolio).toEqual(['IBM']);
    *
    * // Dispatches actions in PARALLEL and wait until no actions are in progress.
    * dispatch(new BuyAction('IBM'));
@@ -909,7 +948,7 @@ export abstract class ReduxAction<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = await store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name).toBe('Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -979,17 +1018,17 @@ export abstract class ReduxAction<St> {
    * expect(store.state.name).toBe('Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions();
-   * expect(state.stocks).toBe(['IBM', 'TSLA']);
+   * expect(state.stocks).toEqual(['IBM', 'TSLA']);
    *
    * // Dispatches two actions in PARALLEL and wait for their TYPES:
-   * expect(store.state.portfolio).toBe(['TSLA']);
+   * expect(store.state.portfolio).toEqual(['TSLA']);
    * dispatch(new BuyAction('IBM'));
    * dispatch(new SellAction('TSLA'));
    * await store.waitAllActionTypes([BuyAction, SellAction]);
-   * expect(store.state.portfolio).toBe(['IBM']);
+   * expect(store.state.portfolio).toEqual(['IBM']);
    *
    * // Dispatches actions in PARALLEL and wait until no actions are in progress.
    * dispatch(new BuyAction('IBM'));
@@ -1017,7 +1056,7 @@ export abstract class ReduxAction<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = await store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name).toBe('Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -1179,6 +1218,14 @@ export class ActionStatus {
   readonly wrappedError: any;
 
   /**
+   * Returns true only if the action has completed executing, either with or without errors.
+   * If this is true, the 'after' method already ran.
+   */
+  get isCompleted(): boolean {
+    return this.hasFinishedMethodAfter;
+  }
+
+  /**
    * Returns true only if the action has completed, and none of the 'before' or 'reduce'
    * methods have thrown an error. This indicates that the 'reduce' method completed and
    * returned a result (even if the result was null). The 'after' method also already ran.
@@ -1210,14 +1257,6 @@ export class ActionStatus {
    */
   get isCompletedFailed(): boolean {
     return this.isCompleted && (this.originalError != null);
-  }
-
-  /**
-   * Returns true only if the action has completed executing, either with or without errors.
-   * If this is true, the 'after' method already ran.
-   */
-  get isCompleted(): boolean {
-    return this.hasFinishedMethodAfter;
   }
 
   constructor(params: {
@@ -1494,3 +1533,54 @@ export type RetryOptions = {
   maxDelay: number,
   unlimitedRetries: boolean
 };
+
+/** The `UserException` is a special type of error that Async Redux automatically
+ * catches and shows to the user in a dialog, or other UI of your choice.
+ *
+ * For this to work, you must throw the `UserException` from inside an action's
+ * `before()` or `reduce()` functions. Only then, Async Redux will be able to
+ * catch the exception and show it to the user.
+ *
+ * However, if you are **not** inside an action, but you still want to show an
+ * error dialog to the user, you may use the provided `UserExceptionAction`.
+ *
+ * ```ts
+ * dispatch(new UserExceptionAction('Please enter a valid number'));
+ * ```
+ *
+ * This action simply throws a corresponding `UserException` from its
+ * own `reduce()` function.
+ *
+ * The `UserExceptionAction` is also useful inside of actions themselves,
+ * if you want to display an error dialog to the user, but you don't want
+ * to interrupt the action by throwing an exception.
+ *
+ * For example, here an invalid number will show an error dialog to the user,
+ * but the action will continue running and set the counter state to `0`:
+ *
+ * ```ts
+ * class ConvertAction {
+ *   constructor(private text: string) {}
+ *
+ *   reduce() {
+ *     let value = parseInt(this.text);
+ *
+ *     if (isNaN(value)) {
+ *       dispatch(new UserExceptionAction('Please enter a valid number'));
+ *       value = 0;
+ *     }
+ *
+ *     return { counter: value };
+ *   }
+ * }
+ * ```
+ */
+export class UserExceptionAction<St> extends ReduxAction<St> {
+  constructor(readonly message: string) {
+    super();
+  }
+
+  reduce(): null {
+    throw new UserException(this.message);
+  }
+}

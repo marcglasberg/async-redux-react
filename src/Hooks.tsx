@@ -113,7 +113,7 @@ export function useAllState<St>(): St {
  * await store.dispatchAndWait(new MyAction());
  * store.dispatchSync(new MyAction());
  * await waitCondition((state) => state.user.name === "Bill");
- * await waitAllActionTypes(['BuyStock', 'SellStock']);
+ * await waitAllActionTypes(['BuyAction', 'SellAction']);
  * ```
  *
  * IMPORTANT:
@@ -431,8 +431,8 @@ class StoreDispatchers<St> {
    * expect(store.state.name, 'Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions([]);
    * expect(state.stocks, ['IBM', 'TSLA']);
    *
@@ -467,7 +467,7 @@ class StoreDispatchers<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name, 'Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -486,7 +486,7 @@ class StoreDispatchers<St> {
   waitCondition(
     condition: (state: St) => boolean,
     timeoutMillis: number | null = null
-  ): Promise<St> {
+  ): Promise<ReduxAction<St> | null> {
     return this.store.waitCondition(condition, timeoutMillis);
   }
 
@@ -529,17 +529,17 @@ class StoreDispatchers<St> {
    * expect(store.state.name).toBe('Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions();
-   * expect(state.stocks).toBe(['IBM', 'TSLA']);
+   * expect(state.stocks).toEqual(['IBM', 'TSLA']);
    *
    * // Dispatches two actions in PARALLEL and wait for their TYPES:
-   * expect(store.state.portfolio).toBe(['TSLA']);
+   * expect(store.state.portfolio).toEqual(['TSLA']);
    * dispatch(new BuyAction('IBM'));
    * dispatch(new SellAction('TSLA'));
    * await store.waitAllActionTypes([BuyAction, SellAction]);
-   * expect(store.state.portfolio).toBe(['IBM']);
+   * expect(store.state.portfolio).toEqual(['IBM']);
    *
    * // Dispatches actions in PARALLEL and wait until no actions are in progress.
    * dispatch(new BuyAction('IBM'));
@@ -567,7 +567,7 @@ class StoreDispatchers<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = await store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name).toBe('Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -647,17 +647,17 @@ class StoreDispatchers<St> {
    * expect(store.state.name).toBe('Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions();
-   * expect(state.stocks).toBe(['IBM', 'TSLA']);
+   * expect(state.stocks).toEqual(['IBM', 'TSLA']);
    *
    * // Dispatches two actions in PARALLEL and wait for their TYPES:
-   * expect(store.state.portfolio).toBe(['TSLA']);
+   * expect(store.state.portfolio).toEqual(['TSLA']);
    * dispatch(new BuyAction('IBM'));
    * dispatch(new SellAction('TSLA'));
    * await store.waitAllActionTypes([BuyAction, SellAction]);
-   * expect(store.state.portfolio).toBe(['IBM']);
+   * expect(store.state.portfolio).toEqual(['IBM']);
    *
    * // Dispatches actions in PARALLEL and wait until no actions are in progress.
    * dispatch(new BuyAction('IBM'));
@@ -685,7 +685,7 @@ class StoreDispatchers<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = await store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name).toBe('Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -755,17 +755,17 @@ class StoreDispatchers<St> {
    * expect(store.state.name).toBe('Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions();
-   * expect(state.stocks).toBe(['IBM', 'TSLA']);
+   * expect(state.stocks).toEqual(['IBM', 'TSLA']);
    *
    * // Dispatches two actions in PARALLEL and wait for their TYPES:
-   * expect(store.state.portfolio).toBe(['TSLA']);
+   * expect(store.state.portfolio).toEqual(['TSLA']);
    * dispatch(new BuyAction('IBM'));
    * dispatch(new SellAction('TSLA'));
    * await store.waitAllActionTypes([BuyAction, SellAction]);
-   * expect(store.state.portfolio).toBe(['IBM']);
+   * expect(store.state.portfolio).toEqual(['IBM']);
    *
    * // Dispatches actions in PARALLEL and wait until no actions are in progress.
    * dispatch(new BuyAction('IBM'));
@@ -793,7 +793,7 @@ class StoreDispatchers<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = await store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name).toBe('Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -856,17 +856,17 @@ class StoreDispatchers<St> {
    * expect(store.state.name).toBe('Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions();
-   * expect(state.stocks).toBe(['IBM', 'TSLA']);
+   * expect(state.stocks).toEqual(['IBM', 'TSLA']);
    *
    * // Dispatches two actions in PARALLEL and wait for their TYPES:
-   * expect(store.state.portfolio).toBe(['TSLA']);
+   * expect(store.state.portfolio).toEqual(['TSLA']);
    * dispatch(new BuyAction('IBM'));
    * dispatch(new SellAction('TSLA'));
    * await store.waitAllActionTypes([BuyAction, SellAction]);
-   * expect(store.state.portfolio).toBe(['IBM']);
+   * expect(store.state.portfolio).toEqual(['IBM']);
    *
    * // Dispatches actions in PARALLEL and wait until no actions are in progress.
    * dispatch(new BuyAction('IBM'));
@@ -894,7 +894,7 @@ class StoreDispatchers<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = await store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name).toBe('Bill');
    *
    * // Wait until some action of the given types is dispatched.
@@ -964,17 +964,17 @@ class StoreDispatchers<St> {
    * expect(store.state.name).toBe('Bill');
    *
    * // Dispatches actions and wait until no actions are in progress.
-   * dispatch(new BuyStock('IBM'));
-   * dispatch(new BuyStock('TSLA'));
+   * dispatch(new BuyAction('IBM'));
+   * dispatch(new BuyAction('TSLA'));
    * await waitAllActions();
-   * expect(state.stocks).toBe(['IBM', 'TSLA']);
+   * expect(state.stocks).toEqual(['IBM', 'TSLA']);
    *
    * // Dispatches two actions in PARALLEL and wait for their TYPES:
-   * expect(store.state.portfolio).toBe(['TSLA']);
+   * expect(store.state.portfolio).toEqual(['TSLA']);
    * dispatch(new BuyAction('IBM'));
    * dispatch(new SellAction('TSLA'));
    * await store.waitAllActionTypes([BuyAction, SellAction]);
-   * expect(store.state.portfolio).toBe(['IBM']);
+   * expect(store.state.portfolio).toEqual(['IBM']);
    *
    * // Dispatches actions in PARALLEL and wait until no actions are in progress.
    * dispatch(new BuyAction('IBM'));
@@ -1002,7 +1002,7 @@ class StoreDispatchers<St> {
    * dispatch(new DoALotOfStuffAction());
    * let action = await store.waitActionType(ChangeNameAction);
    * expect(action instanceof ChangeNameAction).toBe(true);
-   * expect(action.status.isCompleteOk).toBe(true);
+   * expect(action.status.isCompletedOk).toBe(true);
    * expect(store.state.name).toBe('Bill');
    *
    * // Wait until some action of the given types is dispatched.

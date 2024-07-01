@@ -15,7 +15,7 @@ export class State {
   }
 
   withTodos(todoList: TodoList): State {
-    return new State({todoList: todoList || this.todoList, filter: this.filter});
+    return new State({todoList: todoList, filter: this.filter});
   }
 
   /**

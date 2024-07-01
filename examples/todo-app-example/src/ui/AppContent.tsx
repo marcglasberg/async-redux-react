@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   useAllState,
   useClearExceptionFor,
@@ -20,7 +20,7 @@ import { Filter } from '../business/Filter';
 import { AddRandomTodoAction } from '../business/AddRandomTodoAction';
 import './AppStyles.css';
 
-export const AppContent: React.FC = () => {
+export function AppContent() {
   return (
     <div className='appContentStyle'>
       <h1 className='h1Style'>Todo List</h1>
@@ -33,9 +33,9 @@ export const AppContent: React.FC = () => {
       </div>
     </div>
   );
-};
+}
 
-const TodoInput: React.FC = () => {
+function TodoInput() {
 
   const [inputText, setInputText] = useState<string>('');
 
@@ -72,9 +72,9 @@ const TodoInput: React.FC = () => {
       </Button>
     </div>
   );
-};
+}
 
-const NoTodosWarning: React.FC = () => {
+function NoTodosWarning() {
 
   // Getting the whole store state with `useAllState()` works,
   // but the component will rebuild whenever the state changes.
@@ -116,11 +116,10 @@ const NoTodosWarning: React.FC = () => {
   }
 
   return <div></div>;
-};
+}
 
-const TodoList: React.FC = () => {
+function TodoList() {
 
-  const store = useStore();
   const filter = useSelect((state: State) => state.filter);
   const count = useSelect((state: State) => state.todoList.count(filter));
   let items: TodoItem[] = useSelect((state: State) => state.todoList.items);
@@ -144,26 +143,31 @@ const TodoList: React.FC = () => {
     return (
       <div className='todoListDiv'>
         {items.filter(filterTodos).map((item, index) => (
-          <FormControlLabel
-            key={index}
-            control={
-              <Checkbox
-                checked={item.completed}
-                onChange={() => store.dispatch(new ToggleTodoAction(item))}
-                color="primary"
-              />
-            }
-            label={item.text}
-          />
+          <TodoItemComponent key={index} item={item}/>
         ))}
       </div>
     );
   }
-};
+}
 
-const FilterButton: React.FC = () => {
+function TodoItemComponent({item}: {item: TodoItem}) {
   const store = useStore();
-  const state = useAllState<State>();
+
+  return <FormControlLabel
+    control={
+      <Checkbox
+        checked={item.completed}
+        onChange={() => store.dispatch(new ToggleTodoAction(item))}
+        color="primary"
+      />
+    }
+    label={item.text}
+  />
+}
+
+function FilterButton() {
+  const store = useStore();
+  const filter = useSelect((state: State) => state.filter);
 
   return (
     <Button style={{display: "block", width: '100%', height: '60px', marginBottom: "10px"}}
@@ -172,17 +176,23 @@ const FilterButton: React.FC = () => {
               store.dispatch(new NextFilterAction());
             }}
     >
-      {state.filter}
+      {filter}
     </Button>
   );
-};
+}
 
-const RemoveAllButton: React.FC = () => {
+function RemoveAllButton() {
   const dispatch = useDispatch();
   let isDisabled = useIsWaiting(RemoveCompletedTodosAction);
 
   return (
-    <Button style={{display: "block", width: '100%', height: '60px', marginBottom: "10px", color: 'white'}}
+    <Button style={{
+      display: "block",
+      width: '100%',
+      height: '60px',
+      marginBottom: "10px",
+      color: 'white'
+    }}
             disabled={isDisabled}
             variant="contained"
             onClick={() => dispatch(new RemoveCompletedTodosAction())}
@@ -190,19 +200,25 @@ const RemoveAllButton: React.FC = () => {
       {isDisabled ? <CircularProgress size={24} color='inherit'/> : 'Remove Completed Todos'}
     </Button>
   );
-};
+}
 
-const AddRandomTodoButton: React.FC = () => {
+function AddRandomTodoButton() {
   let isLoading = useIsWaiting(AddRandomTodoAction);
   const store = useStore();
 
   return (
-    <Button style={{display: "block", width: '100%', height: '60px', marginBottom: "10px", color: 'white'}}
+    <Button style={{
+      display: "block",
+      width: '100%',
+      height: '60px',
+      marginBottom: "10px",
+      color: 'white'
+    }}
             variant="contained"
             onClick={() => store.dispatch(new AddRandomTodoAction())}
     >
       {isLoading ? <CircularProgress size={24} color='inherit'/> : 'Add Random Todo'}
     </Button>
   );
-};
+}
 

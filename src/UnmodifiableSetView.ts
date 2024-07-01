@@ -59,5 +59,4 @@ export class UnmodifiableSetView<T> implements Set<T> {
   toString() {
     return Array.from(this).toString();
   };
-
 }

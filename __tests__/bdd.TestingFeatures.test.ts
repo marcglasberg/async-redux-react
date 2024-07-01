@@ -56,9 +56,8 @@ Bdd(feature)
 
     // However, we now wait for the state to become 42, no matter how many async processes
     // are dispatched after the action finishes, or how long it takes to get there.
-    let state = await store.waitCondition((state: State) => state.count === 42);
+    await store.waitCondition((state: State) => state.count === 42);
 
-    expect(state.count).toBe(42);
     expect(store.state.count).toBe(42);
   });
 
@@ -86,11 +85,11 @@ Bdd(feature)
     store.dispatch(new IncrementSync());
     store.dispatch(new IncrementAsync());
 
-    // Wait for the state to become 42. It was 42 when the condition was reached.
-    let state = await store.waitCondition((state: State) => state.count === 42);
-    expect(state.count).toBe(42);
+    // Wait for the state to become 42.
+    let action = await store.waitCondition((state: State) => state.count === 42);
+    expect(action).toBeInstanceOf(Add20Async);
 
-    // But it immediately became 0, because the reset action was dispatched.
+    // But it immediately became 0, because the ResetSync action was dispatched.
     expect(store.state.count).toBe(0);
   });
 

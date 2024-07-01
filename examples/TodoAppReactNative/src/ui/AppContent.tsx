@@ -28,7 +28,7 @@ import { Filter } from '../business/Filter';
 import { AddRandomTodoAction } from '../business/AddRandomTodoAction';
 import { State } from '../business/State';
 
-export const AppContent: React.FC = () => {
+export function AppContent() {
   return (
     <View style={{flex: 1}}>
       <Text style={{textAlign: 'center', padding: 16, fontSize: 35, color: '#A44'}}>Todo List</Text>
@@ -39,9 +39,9 @@ export const AppContent: React.FC = () => {
       <RemoveAllButton/>
     </View>
   );
-};
+}
 
-const TodoInput: React.FC = () => {
+function TodoInput() {
 
   const [inputText, setInputText] = useState<string>('');
   const store = useStore();
@@ -79,9 +79,9 @@ const TodoInput: React.FC = () => {
       {isFailed && <Text style={styles.helperText}>{errorText}</Text>}
     </View>
   );
-};
+}
 
-const NoTodosWarning: React.FC = () => {
+function NoTodosWarning() {
 
   // Getting the whole store state with `useAllState()` works,
   // but the component will rebuild whenever the state changes.
@@ -132,11 +132,10 @@ const NoTodosWarning: React.FC = () => {
   }
   //
   else return <View/>;
-};
+}
 
-const TodoList: React.FC = () => {
+function TodoList() {
 
-  const store = useStore();
   const filter = useSelect((state: State) => state.filter);
   const count = useSelect((state: State) => state.todoList.count(filter));
   let items: TodoItem[] = useSelect((state: State) => state.todoList.items);
@@ -163,20 +162,7 @@ const TodoList: React.FC = () => {
 
         <ScrollView>
           {items.filter(filterTodos).map((item, index) => (
-            <BouncyCheckbox
-              size={30}
-              style={styles.checkbox}
-              key={index + item.text}
-              isChecked={item.completed}
-              disableBuiltInState={true}
-              fillColor="#555"
-              unfillColor="#FFE"
-              text={item.text}
-              innerIconStyle={{borderWidth: 2}}
-              onPress={(_) => {
-                store.dispatch(new ToggleTodoAction(item));
-              }}
-            />
+            <TodoItemComponent key={index} item={item} />
           ))}
         </ScrollView>
         <View
@@ -186,9 +172,27 @@ const TodoList: React.FC = () => {
       </View>
     );
   }
-};
+}
 
-const FilterButton: React.FC = () => {
+function TodoItemComponent({item}: {item: TodoItem}) {
+  const store = useStore();
+
+  return <BouncyCheckbox
+    size={30}
+    style={styles.checkbox}
+    isChecked={item.completed}
+    disableBuiltInState={true}
+    fillColor="#555"
+    unfillColor="#FFE"
+    text={item.text}
+    innerIconStyle={{borderWidth: 2}}
+    onPress={(_) => {
+      store.dispatch(new ToggleTodoAction(item));
+    }}
+  />
+}
+
+function FilterButton() {
   const store = useStore();
   const state = useAllState<State>();
 
@@ -206,7 +210,7 @@ const FilterButton: React.FC = () => {
   );
 };
 
-const RemoveAllButton: React.FC = () => {
+function RemoveAllButton() {
   const dispatch = useDispatch();
   let isDisabled = useIsWaiting(RemoveCompletedTodosAction);
 
@@ -229,13 +233,13 @@ const RemoveAllButton: React.FC = () => {
   );
 };
 
-const AddRandomTodoButton: React.FC = () => {
+function AddRandomTodoButton() {
   let isLoading = useIsWaiting(AddRandomTodoAction);
   const store = useStore();
 
   return (
     <TouchableOpacity
-      onPress={() => store.dispatch(new AddRandomTodoAction()) }
+      onPress={() => store.dispatch(new AddRandomTodoAction())}
       style={styles.footerButton}
     >
 

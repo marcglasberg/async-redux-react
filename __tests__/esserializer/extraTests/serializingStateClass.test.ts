@@ -151,7 +151,7 @@ class TodoList {
 }
 
 enum Filter {
-  showAll = 'Showing all',
+  showAll = 'Showing ALL',
   showCompleted = 'Showing COMPLETED',
   showActive = 'Showing ACTIVE',
 }

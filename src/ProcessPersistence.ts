@@ -26,14 +26,23 @@ export class ProcessPersistence<St> {
     try {
       stateReadFromPersistor = await this.persistor.readState();
     } catch (error) {
-      Store.log('Error reading state:' + error + '. State will reset.');
-      await this.persistor.deleteState();
+      this.log('Error reading state:' + error + '. State will reset.');
+
+      try {
+        await this.persistor.deleteState();
+      } catch (error) {
+        this.log('Error deleting the state:' + error + '.');
+      }
     }
 
     if (stateReadFromPersistor === null) {
-      // If it was not possible to read the persisted state, we persist the initial-state
-      // passed to the Store constructor.
-      await this.persistor.saveInitialState(initialState);
+      try {
+        // If it was not possible to read the persisted state,
+        // we persist the initial-state passed to the Store constructor.
+        await this.persistor.saveInitialState(initialState);
+      } catch (error) {
+        this.log('Error saving initial state:' + error + '.');
+      }
     }
     //
     else {
@@ -46,6 +55,14 @@ export class ProcessPersistence<St> {
           false, // Do not persist the state we just read from the persistence.
         )
       );
+    }
+  }
+
+  private log(message: string) {
+    try {
+      Store.log(message);
+    } catch (error) {
+      // Discard error.
     }
   }
 

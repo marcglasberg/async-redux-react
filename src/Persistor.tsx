@@ -26,29 +26,45 @@ import { Store } from './Store';
 export abstract class Persistor<St> {
 
   /**
-   * Read the saved state from the persistence. Should return null if the state is not yet
-   * persisted. This method should be called only once, when the app starts, before the store
-   * is created. The state it returns may become the store's initial-state. If some error
-   * occurs while loading the info, we have to deal with it by fixing the problem. In the worse
-   * case, if we think the state is corrupted and cannot be fixed, one alternative is deleting
-   * all persisted files and returning null.
+   * Function `readState` should read/load the saved state from the persistence.
+   * It will be called only once per run, when the app starts, during the store creation.
+   *
+   * - If the state is not yet saved (first app run), `readState` should return `null`.
+   *
+   * - If the saved state is valid, `readState` should return the saved state.
+   *
+   * - If the saved state is corrupted but can be fixed, `readState` should save the fixed
+   *   state and then return it.
+   *
+   * - If the saved state is corrupted and cannot be fixed, or some other serious error occurs
+   *   while reading the state, `readState` should thrown an error, with an appropriate error
+   *   message.
+   *
+   * Note: If an error is thrown by `readState`, Async Redux will log it with `Store.log()`.
+   *
    */
   abstract readState(): Promise<St | null>;
 
   /**
-   * Delete the saved state from the persistence.
+   * Function `deleteState` should delete/remove the saved state from the persistence.
    */
   abstract deleteState(): Promise<void>;
 
   /**
-   * Save the new state to the persistence.
-   * @param stateChange.lastPersistedState The last state that was persisted. It may be null.
-   * @param stateChange.newState The new state to be persisted.
+   * Function `persistDifference` should save the new state to the persistence,
+   * and return a `Promise` that completes only after it is persisted.
    *
-   * Note you have to make sure that newState is persisted after this method is called.
-   * For simpler apps where your state is small, you can just ignore `lastPersistedState` and
-   * persist the whole `newState` every time. But for larger apps, you should compare
-   * `lastPersistedState` and `newState`, to persist only the difference between them.
+   * This new state is provided to the function as a parameter called `newState`.
+   * For simpler apps where your state is small, you can simply persist the whole `newState`
+   * every time.
+   *
+   * But for larger apps, you may compare it with the last persisted state, and persist only
+   * the difference between them. The last persisted state is provided to the function as a
+   * parameter called `lastPersistedState`. It may be `null` if there is no persisted state
+   * yet (first app run).
+   *
+   * @param lastPersistedState The last state that was persisted. It may be null.
+   * @param newState The new state to be persisted.
    */
   abstract persistDifference(
     lastPersistedState: St | null,
@@ -56,12 +72,14 @@ export abstract class Persistor<St> {
   ): Promise<void>;
 
   /**
-   * Save an initial-state to the persistence.
+   * Function `saveInitialState` should save the given `state` to the persistence,
+   * replacing any previous state that was saved.
    */
   abstract saveInitialState(state: St): Promise<void>;
 
   /**
-   * The default throttle is 2 seconds. Pass null to turn off throttle.
+   * The default throttle is 2 seconds (2000 milliseconds).
+   * Return `null` to turn off the throttle.
    */
   get throttle(): number | null {
     return 2000; // Default throttle is 2 seconds.
