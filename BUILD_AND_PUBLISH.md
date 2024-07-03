@@ -1,17 +1,46 @@
 ## To build and publish this package
 
-In the terminal:
+1. Make sure all functions and classes are added to `async-redux-react\src\index.ts`
 
-```
-npm run build
-npm publish
-```
+2. Update version in `async-redux-react\package.json`:
+
+  ```
+  "name": "async-redux-react",
+  "version": "1.4.1", // Here!
+  ```
+
+3. In directory `async-redux-react\`, run in the terminal:
+
+  ```
+  npm install
+  npm run build  
+  ```
+ 
+4. In directory `async-redux-react\examples\todo-app-example\`, run in the terminal:
+
+  ```
+  npm install  
+  ```
+ 
+5. In directory `async-redux-react\examples\TodoAppReactNative\`, run in the terminal:
+
+  ```
+  npm install  
+  ```
+
+6. Back in directory `async-redux-react\`, run in the terminal:
+
+  ```
+  npm run build
+  npm publish
+  ```
 
 Note:
-             
+
 * Typing `npm run build` will create the `lib` folder with the compiled code.
 
-* `--access=public` is needed only for scoped packages (@username/modern-npm-package) as they're private by default.
+* `npm publish --access=public` is needed only for scoped packages (@username/modern-npm-package) as
+  they're private by default.
 
 See:
 

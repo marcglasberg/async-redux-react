@@ -13,7 +13,7 @@ import {
   SyncReducer,
   UpdateStateAction,
 } from './ReduxAction';
-import { ShowUserException, Store, StoreProvider, } from './Store';
+import { Store, createStore, ShowUserException, StoreProvider } from './Store';
 import {
   useAllState,
   useClearExceptionFor,
@@ -39,7 +39,7 @@ export {
   ProcessPersistence,
   ReduxAction,
   ActionStatus, ReduxReducer, SyncReducer, AsyncReducer, AsyncReducerResult,
-  Store, useStore, useAllState, useSelect, useSelector, StoreProvider, ShowUserException,
+  Store, createStore, useStore, useAllState, useSelect, useSelector, StoreProvider, ShowUserException,
   useIsWaiting, useIsFailed, useExceptionFor, useClearExceptionFor,
   useDispatch, useDispatchAll, useDispatchAndWait, useDispatchAndWaitAll, useDispatchSync, useDispatcher,
   StoreException,

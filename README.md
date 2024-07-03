@@ -4,7 +4,7 @@ Async Redux is a new, unofficial version of Redux, launched in July 2024 for Rea
 
 While it's new for React, it has been
 available for [Flutter](https://pub.dev/packages/async_redux) for a few years, where it ranks among
-the top 10% of most-used packages, meaning its features have been battle-tested in hundreds of
+the top 8% of most-used packages, meaning its features have been battle-tested in hundreds of
 real-world applications.
 
 It is an order of magnitude easier to use than Redux and Redux Toolkit. It's also simpler than MobX,
