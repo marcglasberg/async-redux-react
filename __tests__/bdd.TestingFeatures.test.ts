@@ -128,17 +128,17 @@ Bdd(feature)
 
     // Check the record.
     expect(store.record.toString()).toBe('[\n' +
-      '0. StartAddingAsync ini-1: State(1)\n' +
-      '1. Add20Async ini-2: State(1)\n' +
+      '0. StartAddingAsync ini(1): State(1)\n' +
+      '1. Add20Async ini(2): State(1)\n' +
       '2. StartAddingAsync end: State(1) → State(1)\n' +
-      '3. IncrementSync ini-3: State(1)\n' +
+      '3. IncrementSync ini(3): State(1)\n' +
       '4. IncrementSync end: State(1) → State(2)\n' +
-      '5. IncrementAsync ini-4: State(2)\n' +
+      '5. IncrementAsync ini(4): State(2)\n' +
       '6. IncrementAsync end: State(2) → State(3)\n' +
-      '7. Add19Sync ini-5: State(3)\n' +
+      '7. Add19Sync ini(5): State(3)\n' +
       '8. Add19Sync end: State(3) → State(22)\n' +
       '9. Add20Async end: State(22) → State(42)\n' +
-      '10. ResetSync ini-6: State(42)\n' +
+      '10. ResetSync ini(6): State(42)\n' +
       '11. ResetSync end: State(42) → State(0)\n' +
       ']');
 

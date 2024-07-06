@@ -60,12 +60,57 @@ interface ConstructorParams<St> {
   persistor?: Persistor<St>;
 
   /**
-   * A function that AsyncRedux uses to log information.
-   * If not defined, the default is printing messages to the console with `console.log()`.
-   * Note: The result of this function is not used, and can be anything.   *
-   * To disable it, pass it as `() => {}`.
+   * The `logger` is a function that AsyncRedux uses when it calls `Store.log()`
+   * to log information. It's set up during the creation of the store. For example:
+   *
+   * ```ts
+   * const store = new Store<State>({
+   *   initialState: new State(),
+   *   logger: (obj: any) => process.stdout.write(obj + '\n');
+   * });
+   * ```
+   *
+   * Or using a logger library:
+   *
+   * ```ts
+   * import { Logger } from 'my-logger-library';
+   *
+   * const store = new Store<State>({
+   *   initialState: new State(),
+   *   logger: (obj: any) => Logger.log(obj);
+   * });
+   * ```
+   *
+   * Note, if you don't define a logger yourself, the default is to print
+   * the log messages to the console with `console.log()`.
+   *
+   * This is how you may completely disable the default logger:
+   *
+   * ```ts
+   * const store = new Store<State>({
+   *   initialState: new State(),
+   *   logger: (obj: any) => {}
+   * });
+   * ```
    */
-  logger?: (obj: any) => any;
+  logger: (obj: any) => void;
+
+  /**
+   * If `true`, will use Store.log() to log all state changes.
+   * It uses `Store.describeStateChange()` to create the description of those changes.
+   *
+   * Note this is true (turned on) by default, as it may be useful for development, testing and
+   * debugging. Be sure to turn it off in production, as it may slow down your application:
+   *
+   * ```ts
+   * // In production
+   * const store = new Store<State>({
+   *   initialState: new State(),
+   *   logStateChanges: false,
+   * });
+   * ```
+   */
+  logStateChanges: boolean;
 
   /**
    * Global function to wrap errors.
@@ -296,12 +341,70 @@ export class Store<St> {
   }
 
   /**
-   * The default is `(obj: any) => console.log(obj);`
-   * An alternative is: `(obj: any) => process.stdout.write(obj + '\n');`
+   * The `Store.log()` is a static function that AsyncRedux uses internally to log information.
+   * If you want, you can also use it yourself, like this:
+   *
+   * ```ts
+   * Store.log('Some information: ' + someVariable);
+   * ```
+   *
+   * The log function is set during the creation of the store,
+   * using the `logger` constructor parameter. For example:
+   *
+   * ```ts
+   * const store = new Store<State>({
+   *   initialState: new State(),
+   *   logger: (obj: any) => process.stdout.write(obj + '\n');
+   * });
+   * ```
+   *
+   * Or using a logger library:
+   *
+   * ```ts
+   * import { Logger } from 'my-logger-library';
+   *
+   * const store = new Store<State>({
+   *   initialState: new State(),
+   *   logger: (obj: any) => Logger.log(obj);
+   * });
+   * ```
+   *
+   * Note, if you don't define a logger yourself, the default is to print
+   * the log messages to the console with `console.log()`.
+   *
+   * This is how you may completely disable the default logger:
+   *
+   * ```ts
+   * const store = new Store<State>({
+   *   initialState: new State(),
+   *   logger: (obj: any) => {};
+   * });
+   * ```
    */
   public static log: (obj: any) => void;
 
   private _state: St;
+
+  // When true, no actions can be dispatched.
+  private _shutDown: boolean = false;
+
+  /**
+   * Set this to `true` when you want to abort any new actions that are dispatched.
+   * Note this will not stop async actions already  running,
+   * but you can wait for them to finish:
+   *
+   * ```ts
+   * await store.waitAllActions(null, {
+   *   timeoutMillis: 5000,
+   *   completeImmediately: true
+   * }).catch((error) => { });
+   * ```
+   *
+   * Set this back to `false` to restart the store accepting new action dispatches.
+   */
+  public setShutDown(shutDown: boolean) {
+    this._shutDown = shutDown;
+  }
 
   /**
    * A queue of errors of type UserException, thrown by actions.
@@ -309,6 +412,23 @@ export class Store<St> {
    * This is public if you need it for advanced stuff, but you should probably not touch it.
    */
   public readonly userExceptionsQueue: UserException[];
+
+  /**
+   * If `true`, will use Store.log() to log all state changes.
+   * It uses `Store.describeStateChange()` to create the description of those changes.
+   *
+   * Note this is true (turned on) by default, as it may be useful for development, testing and
+   * debugging. Be sure to turn it off in production, as it may slow down your application:
+   *
+   * ```ts
+   * // In production
+   * const store = new Store<State>({
+   *   initialState: new State(),
+   *   logStateChanges: false,
+   * });
+   * ```
+   */
+  private readonly _logStateChanges: boolean;
 
   /**
    * The async actions that are currently being processed.
@@ -440,7 +560,7 @@ export class Store<St> {
       let count = 0;
       return '[\n' + this.record.changes.map(change =>
         `${count++}. ` +
-        `${change.action.constructor.name} ${change.ini ? 'ini-' + change.dispatchCount : 'end'}: ` +
+        `${change.action.constructor.name} ${change.ini ? 'ini(' + change.dispatchCount + ')' : 'end'}: ` +
         ((change.ini) ? change.prevState : `${change.prevState} → ${change.newState}`) +
         `${change.error ? `, error: ${change.error}` : ''}`
       ).join('\n') + '\n]';
@@ -467,7 +587,8 @@ export class Store<St> {
                 actionObserver,
                 stateObserver,
                 errorObserver,
-                logger
+                logger,
+                logStateChanges,
               }: ConstructorParams<St>
   ) {
     this._state = initialState;
@@ -483,6 +604,7 @@ export class Store<St> {
     this._failedActions = new Map<new (...args: any[]) => ReduxAction<St>, ReduxAction<St>>();
     this._actionsWeCanCheckFailed = new Set();
     Store.log = logger || this._defaultLogger;
+    this._logStateChanges = logStateChanges ?? true;
 
     if (this._processPersistence != null) {
       this._processPersistence.readInitialState(this, initialState).then();
@@ -507,6 +629,11 @@ export class Store<St> {
    * - `dispatchAndWaitAll` which dispatches all given actions, and returns a Promise.
    */
   dispatch(action: ReduxAction<St>): void {
+    if (this._shutDown) {
+      Store.log(`Can't dispatch action ${action} because the store is shut down.`);
+      return;
+    }
+
     let mockedActionOrAction = this._mockActionOrNot(action);
 
     // 1) If mocked as `null`, the action is ignored.
@@ -541,6 +668,10 @@ export class Store<St> {
    * - `dispatchAndWaitAll` which dispatches all given actions, and returns a Promise.
    */
   dispatchAndWait(action: ReduxAction<St>): Promise<ActionStatus> {
+    if (this._shutDown) {
+      Store.log(`Can't dispatch action ${action} because the store is shut down.`);
+      return Promise.resolve(new ActionStatus());
+    }
 
     let mockedActionOrAction = this._mockActionOrNot(action);
 
@@ -639,6 +770,11 @@ export class Store<St> {
    * - `dispatchAll` which dispatches all given actions in parallel.
    */
   dispatchSync(action: ReduxAction<St>): void {
+    if (this._shutDown) {
+      Store.log(`Can't dispatch action ${action} because the store is shut down.`);
+      return;
+    }
+
     let mockedActionOrAction = this._mockActionOrNot(action);
 
     // 1) If mocked as `null`, the action is ignored.
@@ -688,6 +824,11 @@ export class Store<St> {
   // If `mustBeSync` is true, will throw a `StoreException` if the action is ASYNC.
   private _processDispatch(action: ReduxAction<St>, mustBeSync: boolean) {
 
+    if (this._shutDown) {
+      Store.log(`Can't dispatch action ${action} because the store is shut down.`);
+      return;
+    }
+
     this._dispatchCount++;
     Store.log(`${this._dispatchCount}) ${action}`);
 
@@ -696,7 +837,7 @@ export class Store<St> {
 
     action._changeStatus({isDispatched: true});
 
-    // We inject the store so that the action can access it as an object property.
+    // We inject the store into the store, so that the action can access it as a property.
     action._injectStore(this);
 
     // The action is dispatched twice. This is the 1st: when the action starts (ini true).
@@ -1155,11 +1296,13 @@ export class Store<St> {
 
   private _registerState(action: ReduxAction<St>, newState: St) {
 
-    try {
-      let stateChangeDescription = Store.describeStateChange(this.state, newState);
-      if (stateChangeDescription !== '') Store.log(stateChangeDescription);
-    } catch (error) {
-      // Swallow error and do nothing, as this is just a debug print.
+    if (this._logStateChanges) {
+      try {
+        let stateChangeDescription = Store.describeStateChange(this.state, newState);
+        if (stateChangeDescription !== '') Store.log(stateChangeDescription);
+      } catch (error) {
+        // Swallow error and do nothing, as this is just a debug print.
+      }
     }
 
     const prevState = this._state;
@@ -1334,6 +1477,14 @@ export class Store<St> {
     if (result) this._rebuildFromStoreHooks();
   }
 
+  /**
+   * Function `Store.describeStateChange()` returns a string describing only the differences between
+   * two given objects.
+   *
+   * By default, when `logStateChanges` is set to `true` in the Store constructor, function
+   * `describeStateChange` is used together with `Store.log()` to print all state changes to
+   * the console. Note you should turn this off in production.
+   */
   static describeStateChange(obj1: any, obj2: any, path: string = ''): String {
     // Ensure both parameters are objects
     if (typeof obj1 !== 'object' || typeof obj2 !== 'object' || obj1 == null || obj2 == null) {
@@ -1362,6 +1513,39 @@ export class Store<St> {
       }
     }
     return differences;
+  }
+
+  /**
+   * Call `logOut()` when you want to delete the persisted state, and return the store
+   * state to the given initial-state. That's usually necessary when the user logs out
+   * of your app, or the user deletes its account, so that another user may log in,
+   * or start a new sign-up process.
+   *
+   * Note: If you know about any timers or async processes that you may have started,
+   * you should stop/cancel them all before calling this method.
+   *
+   * You may opt to:
+   *
+   * - Wait for `throttle` milliseconds to make sure all async processes that the app may
+   * have started have time to finish. The default `throttle` is 3000 milliseconds (3 seconds).
+   *
+   * - Wait for all actions currently running to finish, but wait at most `actionsThrottle`
+   * milliseconds. If the actions are not finished by then, the state will be deleted anyway.
+   * The default `actionsThrottle` is 6000 milliseconds (6 seconds).
+   */
+  async logOut({
+                  initialState,
+                  throttle = 3000,
+                  actionsThrottle = 6000,
+                }: {
+    store: Store<St>,
+    initialState: St,
+    throttle?: number,
+    actionsThrottle?: number,
+  }): Promise<void> {
+    this._processPersistence?.logOut({
+      store: this, initialState, throttle, actionsThrottle
+    });
   }
 
   /**
@@ -1413,7 +1597,7 @@ export class Store<St> {
   /**
    * Asks the Persistor to read the state from the local persistence.
    * Important: If you use this, you MUST put this state into the store.
-   * The Persistor will assume that's the case, and will not work properly otherwise.
+   * Async Redux will assume that's the case, and will not work properly otherwise.
    */
   async readStateFromPersistence(): Promise<St | null> {
     return this._processPersistence?.readState() || null;

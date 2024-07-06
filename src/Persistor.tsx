@@ -172,6 +172,13 @@ export class PersistException extends Error {
   }
 }
 
+/**
+ * An action that can be dispatched to force the Persistor to persist the state immediately.
+ * It does not change the state.
+ *
+ * Note: This only works if the Persistor is waiting for the throttle period.
+ * If the Persistor is currently persisting the state, this action will be ignored.
+ */
 export class PersistAction<St> extends ReduxAction<St> {
   reduce(): null {
     return null;
