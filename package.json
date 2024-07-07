@@ -1,6 +1,6 @@
 {
   "name": "async-redux-react",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "The power-packed, unofficial new version of Redux state management, launched in July 2024. Easy to use, with detailed documentation and plenty of examples. Visit: asyncredux.com",
   "exports": {
     ".": {

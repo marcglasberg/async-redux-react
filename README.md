@@ -32,7 +32,7 @@ at **[https://asyncredux.com](https://asyncredux.com)**
 State management solutions can sometimes overwhelm with the complexity of concepts you have to
 grasp and the significant knowledge overhead needed to navigate the pitfalls.
 **Async Redux** is the opposite:
-There's no need to be super clever just to make them work.
+There's no need to be super clever to make things work.
 
 [Compare it with Redux Toolkit, TanStack Query, Zustand and Mobx](https://asyncredux.com/react/category/comparisons).
 
@@ -57,8 +57,6 @@ const store = createStore({ initialState: {name: 'Mary', age: 25} });
 class State { constructor(public name: string, public age: number){} }
 const store = createStore<State>({ initialState: new State('Mary', 25) });
 ``` 
-
-&nbsp;
 
 To use the store, add it in a `StoreProvider` at the top of your component tree.
 
@@ -87,8 +85,6 @@ function MyComponent() {
 };
 ```
 
-&nbsp;
-
 The `useSelect` hook selects only the part of the state that your component needs.
 It will rebuild only when that part changes.
 
@@ -100,8 +96,6 @@ function MyComponent() {
   return <div>{name} has {age} years old</div>;    
 };
 ```
-
-&nbsp;
 
 The `useObject` hook is another alternative that only rebuilds when needed:
 
@@ -174,8 +168,6 @@ function MyComponent() {
 };
 ```
 
-&nbsp;
-
 Or getting the store with `useStore` also allows you to dispatch actions:
 
 ```tsx
@@ -214,8 +206,6 @@ class LoadText extends Action {
     return (state) => text;
   }
 ```
-
-&nbsp;
 
 > If you want to understand the above code in terms of traditional Redux patterns,
 > the beginning of the `reduce` method is the equivalent of a middleware,
@@ -286,8 +276,6 @@ class LoadTextAndIncrement extends Action {
 }
 ```
 
-&nbsp;
-
 You can also dispatch actions in **parallel** and wait for them to finish:
 
 ```tsx
@@ -307,8 +295,6 @@ class BuyAndSell extends Action {
   }
 }
 ```
-
-&nbsp;
 
 You can also use `waitCondition` to wait until the `state` changes in a certain way:
 
@@ -366,8 +352,6 @@ class LoadText extends Action {
   reduce() { ... }
 }
 ```
-
-&nbsp;
 
 And you can specify the retry policy:
 
@@ -519,8 +503,6 @@ const store = createStore<string>({
 });  
 ```
 
-&nbsp;
-
 For example, here we handle `FirestoreError` errors thrown by Firebase.
 We convert them into `UserException` errors, which are built-in types that
 automatically show a message to the user in an error dialog:
@@ -559,8 +541,6 @@ export abstract class Action extends ReduxAction<State> {
   searchByText(text) { return this.items.find((item) => item.text.includes(text)); }
 }
 ```
-
-&nbsp;
 
 Now, all actions can use them to access the state in their reducers:
 
