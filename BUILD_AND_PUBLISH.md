@@ -6,7 +6,7 @@
 
   ```
   "name": "async-redux-react",
-  "version": "1.4.1", // Here!
+  "version": "1.4.2", // Here!
   ```
 
 3. In directory `async-redux-react\`, run in the terminal:
