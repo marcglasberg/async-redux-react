@@ -3,11 +3,8 @@
 Async Redux is:
 
 * Simple to learn and easy to use
-* Powerful enough to handle complex applications with millions of users
+* Powerful enough to handle complex apps with millions of users
 * Testable
-
-This means you'll be able to create web and mobile apps much faster, 
-and other people on your team will easily understand and modify your code.
 
 ## What is it?
 
@@ -29,8 +26,8 @@ at **[https://asyncredux.com](https://asyncredux.com)**
 
 ## How does it compare?
 
-State management solutions can sometimes overwhelm with the complexity of concepts you have to
-grasp and the significant knowledge overhead needed to navigate the pitfalls.
+State management solutions can sometimes overwhelm with the complexity of concepts you 
+have to grasp and the significant knowledge overhead needed to navigate the pitfalls.
 **Async Redux** is the opposite:
 There's no need to be super clever to make things work.
 
