@@ -1,6 +1,6 @@
 {
   "name": "async-redux-react",
-  "version": "1.4.3",
+  "version": "1.5.1",
   "description": "The power-packed, unofficial new version of Redux state management, launched in July 2024. Easy to use, with detailed documentation and plenty of examples. Visit: asyncredux.com",
   "exports": {
     ".": {
@@ -79,7 +79,10 @@
     "ts-jest": "^29.1.2",
     "typescript": "4.8.4"
   },
+  "dependencies": {   
+    "@react-native-community/netinfo": "*"
+  },
   "peerDependencies": {
-    "react": "^18.2.0"
+    "react": "^18.2.0 || ^19.0.0"
   }
 }
